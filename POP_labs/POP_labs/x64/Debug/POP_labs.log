@@ -1,0 +1,3 @@
+﻿  lab_2.cpp
+P:\Уник\POP\POP_labs\lab_2.cpp(43,15): warning C4244: аргумент: преобразование "time_t" в "unsigned int", возможна потеря данных
+  POP_labs.vcxproj -> P:\Уник\POP\POP_labs\x64\Debug\POP_labs.exe
