@@ -59,7 +59,7 @@ int WINAPI WinMain(
         wc.lpszClassName = CLASS_NAME;
     } while (!RegisterClass(&wc) && i < NAME_CAPACITY);
 
-    UserData userData;
+    UserData userData = {};
 
     HWND hWnd = CreateWindowEx(
         0,
@@ -170,11 +170,6 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
 
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hWnd, &ps);
-
-        // ScrollWindowEx копирует изображение при смещении (SW_INVALIDATE), поэтому заливка фона осталась
-        HBRUSH hBackgroundBrush = CreateSolidBrush(RGB(240, 240, 240));
-        FillRect(hdc, &ps.rcPaint, hBackgroundBrush);
-        DeleteObject(hBackgroundBrush);
 
         // вычисление видимой области
         RECT visibleRect;
@@ -287,7 +282,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
 
         if (pUserData->currentScrollY != oldScrollY) {
             int deltaY = oldScrollY - pUserData->currentScrollY;
-            ScrollWindowEx(hWnd, 0, deltaY, NULL, NULL, NULL, NULL, SW_INVALIDATE);
+            ScrollWindowEx(hWnd, 0, deltaY, NULL, NULL, NULL, NULL, SW_ERASE | SW_INVALIDATE);
             UpdateScrollBars(hWnd, pUserData);
         }
         return 0;
@@ -312,7 +307,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
 
         if (pUserData->currentScrollX != oldScrollX) {
             int deltaX = oldScrollX - pUserData->currentScrollX;
-            ScrollWindowEx(hWnd, deltaX, 0, NULL, NULL, NULL, NULL, SW_INVALIDATE);
+            ScrollWindowEx(hWnd, deltaX, 0, NULL, NULL, NULL, NULL, SW_ERASE | SW_INVALIDATE);
             UpdateScrollBars(hWnd, pUserData);
         }
         return 0;
