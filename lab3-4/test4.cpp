@@ -4,7 +4,7 @@
 #define NAME_CAPACITY 100
 
 #define CIRCLE_RADIUS 20
-#define CIRCLE_COUNT 500
+#define CIRCLE_COUNT 5000
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
 #define SCROLL_STEP 20
@@ -21,16 +21,10 @@ struct Circle {
 };
 
 struct UserData {
-    Circle* pCirclesCord; //обычный массив
-    int currentScrollX; //
-    int currentScrollY;
-    int oldClientWidth;    
-    int oldClientHeight;  // убрать  
-    HMENU hMenu;
+    Circle* pCirclesCord; 
 };
 
 COLORREF GetRandomColor();
-void UpdateScrollBars(HWND hWnd, UserData* pUserData);
 LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 int WINAPI WinMain(
@@ -70,6 +64,20 @@ int WINAPI WinMain(
 
     if (hWnd == NULL) return 0;
 
+    //создание меню
+    HMENU hMenu = CreateMenu();
+    HMENU hShapeMenu = CreatePopupMenu();
+
+    //создание подменю
+    AppendMenu(hShapeMenu, MF_STRING | MFS_GRAYED, IDM_CIRCLE, "Круги");
+    AppendMenu(hShapeMenu, MF_STRING, IDM_SQUARE, "Квадраты");
+
+    //добавление подменю в меню
+    AppendMenu(hMenu, MF_POPUP, (UINT_PTR)hShapeMenu, "Фигуры");
+
+    //установка меню для окна
+    SetMenu(hWnd, hMenu);
+
     ShowWindow(hWnd, nCmdShow);
 
     MSG msg;
@@ -82,32 +90,6 @@ int WINAPI WinMain(
 
 COLORREF GetRandomColor() {
     return RGB(rand() % 256, rand() % 256, rand() % 256);
-}
-
-void UpdateScrollBars(HWND hWnd, UserData* pUserData) {
-
-    RECT clientRect;
-    GetClientRect(hWnd, &clientRect);
-    int clientWidth = clientRect.right - clientRect.left;
-    int clientHeight = clientRect.bottom - clientRect.top;
-
-    SCROLLINFO si;
-    si.cbSize = sizeof(si);
-    si.fMask = SIF_ALL;
-
-    // вертикальная прокрутка
-    si.nMin = 0;
-    si.nMax = CONTENT_HEIGHT;
-    si.nPage = 0;
-    si.nPos = pUserData->currentScrollY; //сlientHeight
-    SetScrollInfo(hWnd, SB_VERT, &si, TRUE);
-
-    // горизонтальная прокрутка
-    si.nMin = 0;
-    si.nMax = CONTENT_WIDTH;
-    si.nPage = clientWidth;
-    si.nPos = pUserData->currentScrollX;
-    SetScrollInfo(hWnd, SB_HORZ, &si, TRUE);
 }
 
 
@@ -123,10 +105,6 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
         SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)pUserData);
 
         // инициализация UserData
-        pUserData->currentScrollX = 0;
-        pUserData->currentScrollY = 0;
-        pUserData->oldClientWidth = WINDOW_WIDTH;     
-        pUserData->oldClientHeight = WINDOW_HEIGHT;
         pUserData->pCirclesCord = new Circle[CIRCLE_COUNT];
 
         for (int i = 0; i < CIRCLE_COUNT; i++) {
@@ -134,28 +112,8 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
             circle.x = rand() % CONTENT_WIDTH;
             circle.y = rand() % CONTENT_HEIGHT;
             circle.color = GetRandomColor();
-
-            /*circle.bounds.left = circle.x - CIRCLE_RADIUS;
-            circle.bounds.top = circle.y - CIRCLE_RADIUS;
-            circle.bounds.right = circle.x + CIRCLE_RADIUS;
-            circle.bounds.bottom = circle.y + CIRCLE_RADIUS;*/
-
             pUserData->pCirclesCord[i] = circle;
         }
-
-        //создание меню
-        pUserData->hMenu = CreateMenu();
-        HMENU hShapeMenu = CreatePopupMenu();
-
-        //создание подменю
-        AppendMenu(hShapeMenu, MF_STRING | MFS_GRAYED, IDM_CIRCLE, "Круги");
-        AppendMenu(hShapeMenu, MF_STRING, IDM_SQUARE, "Квадраты");
-
-        //добавление подменю в меню
-        AppendMenu(pUserData->hMenu, MF_POPUP, (UINT_PTR)hShapeMenu, "Фигуры");
-
-        //установка меню для окна
-        SetMenu(hWnd, pUserData->hMenu);
 
         return 0;
     }
@@ -165,23 +123,33 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hWnd, &ps);
 
+        SCROLLINFO si;
+        si.cbSize = sizeof(si);
+        si.fMask = SIF_POS;
+
+        GetScrollInfo(hWnd, SB_HORZ, &si);
+        int currentScrollX = si.nPos;
+
+        GetScrollInfo(hWnd, SB_VERT, &si);
+        int currentScrollY = si.nPos;
+
         // вычисление видимой области
         RECT visibleRect;
-        visibleRect.left = ps.rcPaint.left + pUserData->currentScrollX;
-        visibleRect.top = ps.rcPaint.top + pUserData->currentScrollY;
-        visibleRect.right = ps.rcPaint.right + pUserData->currentScrollX;
-        visibleRect.bottom = ps.rcPaint.bottom + pUserData->currentScrollY;
+        visibleRect.left = ps.rcPaint.left + currentScrollX;
+        visibleRect.top = ps.rcPaint.top + currentScrollY;
+        visibleRect.right = ps.rcPaint.right + currentScrollX;
+        visibleRect.bottom = ps.rcPaint.bottom + currentScrollY;
 
 
         //получение состояния меню
-        BOOL drawCircles = GetMenuState(GetSubMenu(pUserData->hMenu, 0), IDM_CIRCLE, MF_BYCOMMAND) == MFS_GRAYED;
+        BOOL drawCircles = GetMenuState(GetSubMenu(GetMenu(hWnd), 0), IDM_CIRCLE, MF_BYCOMMAND) == MFS_GRAYED;
 
         for (int i = 0; i < CIRCLE_COUNT; i++) {
             const Circle& circle = pUserData->pCirclesCord[i];
             RECT intersection;
 
             RECT circleBounds = {};
-            
+
             circleBounds.left = circle.x - CIRCLE_RADIUS;
             circleBounds.top = circle.y - CIRCLE_RADIUS;
             circleBounds.right = circle.x + CIRCLE_RADIUS;
@@ -189,10 +157,6 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
 
 
             if (IntersectRect(&intersection, &circleBounds, &visibleRect)) {
-
-                // вычисление координат фигур с учётом прокрутки
-                int screenX = circle.x - pUserData->currentScrollX; 
-                int screenY = circle.y - pUserData->currentScrollY;
 
                 HBRUSH hBrush = CreateSolidBrush(circle.color);
                 HBRUSH hOldBrush = (HBRUSH)SelectObject(hdc, hBrush);
@@ -203,18 +167,18 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
                 if (drawCircles) {
                     // круг
                     Ellipse(hdc,
-                        screenX - CIRCLE_RADIUS,
-                        screenY - CIRCLE_RADIUS,
-                        screenX + CIRCLE_RADIUS,
-                        screenY + CIRCLE_RADIUS);
+                        circleBounds.left - currentScrollX,
+                        circleBounds.top - currentScrollY,
+                        circleBounds.right - currentScrollX,
+                        circleBounds.bottom - currentScrollY);
                 }
                 else {
                     // квадрат
                     Rectangle(hdc,
-                        screenX - CIRCLE_RADIUS,
-                        screenY - CIRCLE_RADIUS,
-                        screenX + CIRCLE_RADIUS,
-                        screenY + CIRCLE_RADIUS);
+                        circleBounds.left - currentScrollX,
+                        circleBounds.top - currentScrollY,
+                        circleBounds.right - currentScrollX,
+                        circleBounds.bottom - currentScrollY);
                 }
 
                 SelectObject(hdc, hOldBrush);
@@ -237,86 +201,101 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
         mii.fMask = MIIM_STATE;
 
         switch (LOWORD(wParam)) {
-        case IDM_CIRCLE:
+        case IDM_CIRCLE: {
+
+            HMENU hMenu = GetMenu(hWnd);
 
             // состояние для кругов
             mii.fState = MFS_GRAYED;
-            SetMenuItemInfo(pUserData->hMenu, IDM_CIRCLE, FALSE, &mii);
+            SetMenuItemInfo(hMenu, IDM_CIRCLE, FALSE, &mii);
 
             mii.fState = MFS_ENABLED;
-            SetMenuItemInfo(pUserData->hMenu, IDM_SQUARE, FALSE, &mii);
+            SetMenuItemInfo(hMenu, IDM_SQUARE, FALSE, &mii);
 
-            InvalidateRect(hWnd, NULL, TRUE); 
-            return 0;
+            InvalidateRect(hWnd, NULL, TRUE);
+            break;
+        }
 
-        case IDM_SQUARE:
+        case IDM_SQUARE: {
+
+            HMENU hMenu = GetMenu(hWnd);
 
             // состояние для квадратов
             mii.fState = MFS_ENABLED;
-            SetMenuItemInfo(pUserData->hMenu, IDM_CIRCLE, FALSE, &mii);
+            SetMenuItemInfo(hMenu, IDM_CIRCLE, FALSE, &mii);
 
             mii.fState = MFS_GRAYED;
-            SetMenuItemInfo(pUserData->hMenu, IDM_SQUARE, FALSE, &mii);
+            SetMenuItemInfo(hMenu, IDM_SQUARE, FALSE, &mii);
 
-            InvalidateRect(hWnd, NULL, TRUE); 
-            return 0;
+            InvalidateRect(hWnd, NULL, TRUE);
+            break;
+        }
         }
         return 0;
     }
+
     case WM_VSCROLL: {
-        UserData* pUserData = (UserData*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 
         RECT clientRect;
         GetClientRect(hWnd, &clientRect);
-        int clientHeight = clientRect.bottom - clientRect.top;
+        int clientHeight = clientRect.bottom;
 
-        int oldScrollY = pUserData->currentScrollY;
+        SCROLLINFO si;
+        si.cbSize = sizeof(si);
+        si.fMask = SIF_ALL;
+        GetScrollInfo(hWnd, SB_VERT, &si);
+
+        int yPos = si.nPos;
 
         switch (LOWORD(wParam)) {
-        case SB_LINEUP: pUserData->currentScrollY -= SCROLL_STEP; break;
-        case SB_LINEDOWN: pUserData->currentScrollY += SCROLL_STEP; break;
-        case SB_PAGEUP: pUserData->currentScrollY -= clientHeight; break;
-        case SB_PAGEDOWN: pUserData->currentScrollY += clientHeight; break;
-        case SB_THUMBTRACK: pUserData->currentScrollY = HIWORD(wParam); break;
-        case SB_TOP: pUserData->currentScrollY = 0; break;
-        case SB_BOTTOM: pUserData->currentScrollY = CONTENT_HEIGHT - clientHeight; break;
+        case SB_LINEUP: si.nPos -= SCROLL_STEP; break;
+        case SB_LINEDOWN: si.nPos += SCROLL_STEP; break;
+        case SB_PAGEUP: si.nPos = 0; break;
+        case SB_PAGEDOWN: si.nPos = CONTENT_HEIGHT - clientHeight; break;
+        case SB_THUMBTRACK: si.nPos = si.nTrackPos; break;
+        case SB_TOP: si.nPos = 0; break;
+        case SB_BOTTOM: si.nPos = CONTENT_HEIGHT - clientHeight; break;
         }
 
-        pUserData->currentScrollY = max(0, min(pUserData->currentScrollY, CONTENT_HEIGHT - clientHeight));
+        si.fMask = SIF_POS;
+        SetScrollInfo(hWnd, SB_VERT, &si, TRUE);
+        GetScrollInfo(hWnd, SB_VERT, &si);
 
-        if (pUserData->currentScrollY != oldScrollY) {
-            int deltaY = oldScrollY - pUserData->currentScrollY;
-            ScrollWindowEx(hWnd, 0, deltaY, NULL, NULL, NULL, NULL, SW_ERASE | SW_INVALIDATE);
-            UpdateScrollBars(hWnd, pUserData);
+        if (si.nPos != yPos) {
+            ScrollWindowEx(hWnd, 0, yPos - si.nPos, NULL, NULL, NULL, NULL, SW_ERASE | SW_INVALIDATE);
         }
         return 0;
     }
 
     case WM_HSCROLL: {
-        UserData* pUserData = (UserData*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 
-        RECT clientRect;
-        GetClientRect(hWnd, &clientRect);
-        //Добавить GetScrollInfo
-        int clientWidth = clientRect.right - clientRect.left;
 
-        int oldScrollX = pUserData->currentScrollX;
+        //RECT clientRect;
+        //GetClientRect(hWnd, &clientRect);
+
+        //int clientWidth = clientRect.right - clientRect.left;
+
+        SCROLLINFO si;
+        si.cbSize = sizeof(si);
+        si.fMask = SIF_ALL;
+        GetScrollInfo(hWnd, SB_HORZ, &si);
+
+        int xPos = si.nPos;
 
         switch (LOWORD(wParam)) {
-        case SB_LINELEFT: pUserData->currentScrollX -= SCROLL_STEP; break;
-        case SB_LINERIGHT: pUserData->currentScrollX += SCROLL_STEP; break;
-        case SB_THUMBTRACK: pUserData->currentScrollX = HIWORD(wParam); break;
+        case SB_LINELEFT: si.nPos -= SCROLL_STEP; break;
+        case SB_LINERIGHT: si.nPos += SCROLL_STEP; break;
+        case SB_THUMBTRACK: si.nPos = si.nTrackPos; break;
         }
 
-        pUserData->currentScrollX = max(0, min(pUserData->currentScrollX, CONTENT_WIDTH - clientWidth));
 
-        if (pUserData->currentScrollX != oldScrollX) {
-            int deltaX = oldScrollX - pUserData->currentScrollX;
-            ScrollWindowEx(hWnd, deltaX, 0, NULL, NULL, NULL, NULL, SW_ERASE | SW_INVALIDATE);
-            UpdateScrollBars(hWnd, pUserData); //SetScrollInfo для позиции ползунка
-            
+        si.fMask = SIF_POS;
+        SetScrollInfo(hWnd, SB_HORZ, &si, TRUE);
+        GetScrollInfo(hWnd, SB_HORZ, &si);
+
+        if (si.nPos != xPos) {
+            ScrollWindowEx(hWnd, xPos - si.nPos, 0, NULL, NULL, NULL, NULL, SW_ERASE | SW_INVALIDATE);
         }
-        //отсюда вызвать invalidateRect
         return 0;
     }
 
@@ -360,30 +339,28 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
     }
 
     case WM_SIZE: {
-        UserData* pUserData = (UserData*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 
         RECT clientRect;
         GetClientRect(hWnd, &clientRect);
-        int newClientWidth = clientRect.right - clientRect.left;
-        int newClientHeight = clientRect.bottom - clientRect.top;
 
-        // ограничение текущей позиции прокрутки новыми пределами
-        int maxScrollX = max(0, CONTENT_WIDTH - newClientWidth);
-        int maxScrollY = max(0, CONTENT_HEIGHT - newClientHeight);
+        SCROLLINFO si;
 
-        pUserData->currentScrollX = min(pUserData->currentScrollX, maxScrollX);
-        pUserData->currentScrollY = min(pUserData->currentScrollY, maxScrollY);
+        si.fMask = SIF_RANGE | SIF_PAGE | SIF_POS;
+        si.cbSize = sizeof(SCROLLINFO);
+        si.nMin = 0;
 
-        // сохранение текущих размеров
-        pUserData->oldClientWidth = newClientWidth;
-        pUserData->oldClientHeight = newClientHeight;
+        si.nMax = CONTENT_HEIGHT;
+        si.nPage = clientRect.bottom;
+        SetScrollInfo(hWnd, SB_VERT, &si, TRUE);
 
-        //утсановить nMax для вертикали и горизонтали
-        UpdateScrollBars(hWnd, pUserData);
+        si.nMax = CONTENT_WIDTH;
+        si.nPage = clientRect.right;
+        SetScrollInfo(hWnd, SB_HORZ, &si, TRUE);
 
         InvalidateRect(hWnd, NULL, TRUE);
         return 0;
     }
+
     case WM_DESTROY: {
         UserData* pUserData = (UserData*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 
@@ -395,6 +372,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
         PostQuitMessage(0);
         break;
     }
+
     default:
         return DefWindowProc(hWnd, msg, wParam, lParam);
     }
