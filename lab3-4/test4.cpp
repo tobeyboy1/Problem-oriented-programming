@@ -1,11 +1,10 @@
 #include <windows.h>
-#include <vector>
 #include <time.h>
 
 #define NAME_CAPACITY 100
 
 #define CIRCLE_RADIUS 20
-#define CIRCLE_COUNT 5000
+#define CIRCLE_COUNT 500
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
 #define SCROLL_STEP 20
@@ -19,15 +18,14 @@
 struct Circle {
     int x, y;
     COLORREF color;
-    RECT bounds;
 };
 
 struct UserData {
-    std::vector<Circle> circles;
-    int currentScrollX;
+    Circle* pCirclesCord; //обычный массив
+    int currentScrollX; //
     int currentScrollY;
     int oldClientWidth;    
-    int oldClientHeight;   
+    int oldClientHeight;  // убрать  
     HMENU hMenu;
 };
 
@@ -100,8 +98,8 @@ void UpdateScrollBars(HWND hWnd, UserData* pUserData) {
     // вертикальная прокрутка
     si.nMin = 0;
     si.nMax = CONTENT_HEIGHT;
-    si.nPage = clientHeight;
-    si.nPos = pUserData->currentScrollY;
+    si.nPage = 0;
+    si.nPos = pUserData->currentScrollY; //сlientHeight
     SetScrollInfo(hWnd, SB_VERT, &si, TRUE);
 
     // горизонтальная прокрутка
@@ -129,8 +127,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
         pUserData->currentScrollY = 0;
         pUserData->oldClientWidth = WINDOW_WIDTH;     
         pUserData->oldClientHeight = WINDOW_HEIGHT;
-
-        pUserData->circles.reserve(CIRCLE_COUNT);
+        pUserData->pCirclesCord = new Circle[CIRCLE_COUNT];
 
         for (int i = 0; i < CIRCLE_COUNT; i++) {
             Circle circle;
@@ -138,15 +135,13 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
             circle.y = rand() % CONTENT_HEIGHT;
             circle.color = GetRandomColor();
 
-            circle.bounds.left = circle.x - CIRCLE_RADIUS;
+            /*circle.bounds.left = circle.x - CIRCLE_RADIUS;
             circle.bounds.top = circle.y - CIRCLE_RADIUS;
             circle.bounds.right = circle.x + CIRCLE_RADIUS;
-            circle.bounds.bottom = circle.y + CIRCLE_RADIUS;
+            circle.bounds.bottom = circle.y + CIRCLE_RADIUS;*/
 
-            pUserData->circles.push_back(circle);
+            pUserData->pCirclesCord[i] = circle;
         }
-
-        UpdateScrollBars(hWnd, pUserData);
 
         //создание меню
         pUserData->hMenu = CreateMenu();
@@ -162,7 +157,6 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
         //установка меню для окна
         SetMenu(hWnd, pUserData->hMenu);
 
-        InvalidateRect(hWnd, NULL, TRUE);
         return 0;
     }
     case WM_PAINT: {
@@ -182,12 +176,22 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
         //получение состояния меню
         BOOL drawCircles = GetMenuState(GetSubMenu(pUserData->hMenu, 0), IDM_CIRCLE, MF_BYCOMMAND) == MFS_GRAYED;
 
-        for (const Circle& circle : pUserData->circles) {
+        for (int i = 0; i < CIRCLE_COUNT; i++) {
+            const Circle& circle = pUserData->pCirclesCord[i];
             RECT intersection;
-            if (IntersectRect(&intersection, &circle.bounds, &visibleRect)) {
+
+            RECT circleBounds = {};
+            
+            circleBounds.left = circle.x - CIRCLE_RADIUS;
+            circleBounds.top = circle.y - CIRCLE_RADIUS;
+            circleBounds.right = circle.x + CIRCLE_RADIUS;
+            circleBounds.bottom = circle.y + CIRCLE_RADIUS;
+
+
+            if (IntersectRect(&intersection, &circleBounds, &visibleRect)) {
 
                 // вычисление координат фигур с учётом прокрутки
-                int screenX = circle.x - pUserData->currentScrollX;
+                int screenX = circle.x - pUserData->currentScrollX; 
                 int screenY = circle.y - pUserData->currentScrollY;
 
                 HBRUSH hBrush = CreateSolidBrush(circle.color);
@@ -293,6 +297,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
 
         RECT clientRect;
         GetClientRect(hWnd, &clientRect);
+        //Добавить GetScrollInfo
         int clientWidth = clientRect.right - clientRect.left;
 
         int oldScrollX = pUserData->currentScrollX;
@@ -308,8 +313,10 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
         if (pUserData->currentScrollX != oldScrollX) {
             int deltaX = oldScrollX - pUserData->currentScrollX;
             ScrollWindowEx(hWnd, deltaX, 0, NULL, NULL, NULL, NULL, SW_ERASE | SW_INVALIDATE);
-            UpdateScrollBars(hWnd, pUserData);
+            UpdateScrollBars(hWnd, pUserData); //SetScrollInfo для позиции ползунка
+            
         }
+        //отсюда вызвать invalidateRect
         return 0;
     }
 
@@ -371,12 +378,19 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
         pUserData->oldClientWidth = newClientWidth;
         pUserData->oldClientHeight = newClientHeight;
 
+        //утсановить nMax для вертикали и горизонтали
         UpdateScrollBars(hWnd, pUserData);
 
         InvalidateRect(hWnd, NULL, TRUE);
         return 0;
     }
     case WM_DESTROY: {
+        UserData* pUserData = (UserData*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+
+        if (pUserData->pCirclesCord) {
+            delete[] pUserData->pCirclesCord;
+            pUserData->pCirclesCord = nullptr;
+        }
 
         PostQuitMessage(0);
         break;
