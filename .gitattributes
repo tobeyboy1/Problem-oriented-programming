@@ -1,8 +1,0 @@
-# Для исходных кодов C#
-*.cs     text working-tree-encoding=UTF-8
-# Для исходных кодов C++
-*.cpp   text working-tree-encoding=UTF-8
-*.h     text working-tree-encoding=UTF-8
-# Для других текстовых файлов (например, .txt, .md)
-*.txt   text working-tree-encoding=UTF-8
-*.md    text working-tree-encoding=UTF-8
