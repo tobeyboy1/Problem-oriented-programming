@@ -21,7 +21,7 @@ struct Circle {
 };
 
 struct UserData {
-    Circle* pCirclesCord; 
+    Circle* pCirclesCord;
 };
 
 COLORREF GetRandomColor();
