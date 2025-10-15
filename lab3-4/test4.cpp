@@ -94,6 +94,7 @@ COLORREF GetRandomColor() {
 
 
 LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+
     switch (msg) {
     case WM_CREATE: {
 
@@ -345,6 +346,36 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
 
         SCROLLINFO si;
 
+        //горизонталь
+        si.cbSize = sizeof(si);
+        si.fMask = SIF_RANGE | SIF_PAGE | SIF_POS;
+
+        GetScrollInfo(hWnd, SB_HORZ, &si);
+        int xMaxScroll = max(CONTENT_WIDTH - clientRect.right, 0);
+        int xCurrentScroll = min(si.nPos, xMaxScroll);
+
+        si.nMin = 0;
+        si.nMax = CONTENT_WIDTH - clientRect.right;
+        si.nPage = 0;
+        si.nPos = xCurrentScroll;
+        SetScrollInfo(hWnd, SB_HORZ, &si, TRUE);
+
+        //вертикаль
+        si.cbSize = sizeof(si);
+        si.fMask = SIF_RANGE | SIF_PAGE | SIF_POS;
+
+        GetScrollInfo(hWnd, SB_VERT, &si);
+        int yMaxScroll = max(CONTENT_HEIGHT - clientRect.bottom, 0);
+        int yCurrentScroll = min(si.nPos, yMaxScroll);
+
+        si.nMin = 0;
+        si.nMax = CONTENT_HEIGHT - clientRect.bottom;
+        si.nPage = 0;
+        si.nPos = yCurrentScroll;
+        SetScrollInfo(hWnd, SB_VERT, &si, TRUE);
+
+        /*SCROLLINFO si;
+
         si.fMask = SIF_RANGE | SIF_PAGE | SIF_POS;
         si.cbSize = sizeof(SCROLLINFO);
         si.nMin = 0;
@@ -355,7 +386,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
 
         si.nMax = CONTENT_WIDTH;
         si.nPage = clientRect.right;
-        SetScrollInfo(hWnd, SB_HORZ, &si, TRUE);
+        SetScrollInfo(hWnd, SB_HORZ, &si, TRUE);*/
 
         InvalidateRect(hWnd, NULL, TRUE);
         return 0;
@@ -370,7 +401,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
         }
 
         PostQuitMessage(0);
-        break;
+        return 0;
     }
 
     default:
