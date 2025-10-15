@@ -1,6 +1,6 @@
-#include <windows.h>
+ï»¿#include <windows.h>
 #include <time.h>
-//Ïðîâåðêà
+//ÐŸÑ€Ð¾Ð²ÐµÑ€ÐºÐ°
 #define NAME_CAPACITY 100
 
 #define CIRCLE_RADIUS 20
@@ -11,7 +11,7 @@
 #define CONTENT_WIDTH 2200
 #define CONTENT_HEIGHT 2000
 
-// Èäåíòèôèêàòîðû ìåíþ
+// Ð˜Ð´ÐµÐ½Ñ‚Ð¸Ñ„Ð¸ÐºÐ°Ñ‚Ð¾Ñ€Ñ‹ Ð¼ÐµÐ½ÑŽ
 #define IDM_CIRCLE 1001
 #define IDM_SQUARE 1002
 
@@ -64,18 +64,18 @@ int WINAPI WinMain(
 
     if (hWnd == NULL) return 0;
 
-    //ñîçäàíèå ìåíþ
+    //ÑÐ¾Ð·Ð´Ð°Ð½Ð¸Ðµ Ð¼ÐµÐ½ÑŽ
     HMENU hMenu = CreateMenu();
     HMENU hShapeMenu = CreatePopupMenu();
 
-    //ñîçäàíèå ïîäìåíþ
-    AppendMenu(hShapeMenu, MF_STRING | MFS_GRAYED, IDM_CIRCLE, "Êðóãè");
-    AppendMenu(hShapeMenu, MF_STRING, IDM_SQUARE, "Êâàäðàòû");
+    //ÑÐ¾Ð·Ð´Ð°Ð½Ð¸Ðµ Ð¿Ð¾Ð´Ð¼ÐµÐ½ÑŽ
+    AppendMenu(hShapeMenu, MF_STRING | MFS_GRAYED, IDM_CIRCLE, "ÐšÑ€ÑƒÐ³Ð¸");
+    AppendMenu(hShapeMenu, MF_STRING, IDM_SQUARE, "ÐšÐ²Ð°Ð´Ñ€Ð°Ñ‚Ñ‹");
 
-    //äîáàâëåíèå ïîäìåíþ â ìåíþ
-    AppendMenu(hMenu, MF_POPUP, (UINT_PTR)hShapeMenu, "Ôèãóðû");
+    //Ð´Ð¾Ð±Ð°Ð²Ð»ÐµÐ½Ð¸Ðµ Ð¿Ð¾Ð´Ð¼ÐµÐ½ÑŽ Ð² Ð¼ÐµÐ½ÑŽ
+    AppendMenu(hMenu, MF_POPUP, (UINT_PTR)hShapeMenu, "Ð¤Ð¸Ð³ÑƒÑ€Ñ‹");
 
-    //óñòàíîâêà ìåíþ äëÿ îêíà
+    //ÑƒÑÑ‚Ð°Ð½Ð¾Ð²ÐºÐ° Ð¼ÐµÐ½ÑŽ Ð´Ð»Ñ Ð¾ÐºÐ½Ð°
     SetMenu(hWnd, hMenu);
 
     ShowWindow(hWnd, nCmdShow);
@@ -105,7 +105,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
 
         SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)pUserData);
 
-        // èíèöèàëèçàöèÿ UserData
+        // Ð¸Ð½Ð¸Ñ†Ð¸Ð°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ UserData
         pUserData->pCirclesCord = new Circle[CIRCLE_COUNT];
 
         for (int i = 0; i < CIRCLE_COUNT; i++) {
@@ -134,7 +134,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
         GetScrollInfo(hWnd, SB_VERT, &si);
         int currentScrollY = si.nPos;
 
-        // âû÷èñëåíèå âèäèìîé îáëàñòè
+        // Ð²Ñ‹Ñ‡Ð¸ÑÐ»ÐµÐ½Ð¸Ðµ Ð²Ð¸Ð´Ð¸Ð¼Ð¾Ð¹ Ð¾Ð±Ð»Ð°ÑÑ‚Ð¸
         RECT visibleRect;
         visibleRect.left = ps.rcPaint.left + currentScrollX;
         visibleRect.top = ps.rcPaint.top + currentScrollY;
@@ -142,7 +142,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
         visibleRect.bottom = ps.rcPaint.bottom + currentScrollY;
 
 
-        //ïîëó÷åíèå ñîñòîÿíèÿ ìåíþ
+        //Ð¿Ð¾Ð»ÑƒÑ‡ÐµÐ½Ð¸Ðµ ÑÐ¾ÑÑ‚Ð¾ÑÐ½Ð¸Ñ Ð¼ÐµÐ½ÑŽ
         BOOL drawCircles = GetMenuState(GetSubMenu(GetMenu(hWnd), 0), IDM_CIRCLE, MF_BYCOMMAND) == MFS_GRAYED;
 
         for (int i = 0; i < CIRCLE_COUNT; i++) {
@@ -166,7 +166,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
 
 
                 if (drawCircles) {
-                    // êðóã
+                    // ÐºÑ€ÑƒÐ³
                     Ellipse(hdc,
                         circleBounds.left - currentScrollX,
                         circleBounds.top - currentScrollY,
@@ -174,7 +174,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
                         circleBounds.bottom - currentScrollY);
                 }
                 else {
-                    // êâàäðàò
+                    // ÐºÐ²Ð°Ð´Ñ€Ð°Ñ‚
                     Rectangle(hdc,
                         circleBounds.left - currentScrollX,
                         circleBounds.top - currentScrollY,
@@ -206,7 +206,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
 
             HMENU hMenu = GetMenu(hWnd);
 
-            // ñîñòîÿíèå äëÿ êðóãîâ
+            // ÑÐ¾ÑÑ‚Ð¾ÑÐ½Ð¸Ðµ Ð´Ð»Ñ ÐºÑ€ÑƒÐ³Ð¾Ð²
             mii.fState = MFS_GRAYED;
             SetMenuItemInfo(hMenu, IDM_CIRCLE, FALSE, &mii);
 
@@ -221,7 +221,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
 
             HMENU hMenu = GetMenu(hWnd);
 
-            // ñîñòîÿíèå äëÿ êâàäðàòîâ
+            // ÑÐ¾ÑÑ‚Ð¾ÑÐ½Ð¸Ðµ Ð´Ð»Ñ ÐºÐ²Ð°Ð´Ñ€Ð°Ñ‚Ð¾Ð²
             mii.fState = MFS_ENABLED;
             SetMenuItemInfo(hMenu, IDM_CIRCLE, FALSE, &mii);
 
@@ -346,7 +346,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
 
         SCROLLINFO si;
 
-        //ãîðèçîíòàëü
+        //Ð³Ð¾Ñ€Ð¸Ð·Ð¾Ð½Ñ‚Ð°Ð»ÑŒ
         si.cbSize = sizeof(si);
         si.fMask = SIF_RANGE | SIF_PAGE | SIF_POS;
 
@@ -360,7 +360,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
         si.nPos = xCurrentScroll;
         SetScrollInfo(hWnd, SB_HORZ, &si, TRUE);
 
-        //âåðòèêàëü
+        //Ð²ÐµÑ€Ñ‚Ð¸ÐºÐ°Ð»ÑŒ
         si.cbSize = sizeof(si);
         si.fMask = SIF_RANGE | SIF_PAGE | SIF_POS;
 
@@ -394,7 +394,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
 
     case WM_DESTROY: {
         UserData* pUserData = (UserData*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
-
+        
         if (pUserData->pCirclesCord) {
             delete[] pUserData->pCirclesCord;
             pUserData->pCirclesCord = nullptr;
