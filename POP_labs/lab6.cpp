@@ -143,7 +143,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
         POINT pt = { LOWORD(lParam), HIWORD(lParam) };
         ClientToScreen(hWnd, &pt);
 
-        TrackPopupMenu(hSubMenu, TPM_CENTERALIGN | TPM_RIGHTBUTTON, pt.x, pt.y, 0, hWnd, NULL);
+        TrackPopupMenu(hSubMenu, TPM_CENTERALIGN, pt.x, pt.y, 0, hWnd, NULL);
 
         DestroyMenu(hContextMenu);
         return 0;
