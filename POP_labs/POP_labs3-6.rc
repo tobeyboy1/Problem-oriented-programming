@@ -2,7 +2,7 @@
 //
 #pragma code_page(65001)
 
-#include "resource.h"
+#include "resourceLab3-6.h"
 
 #define APSTUDIO_READONLY_SYMBOLS
 /////////////////////////////////////////////////////////////////////////////
@@ -28,7 +28,7 @@ LANGUAGE LANG_RUSSIAN, SUBLANG_DEFAULT
 
 1 TEXTINCLUDE 
 BEGIN
-    "resource.h\0"
+    "resourceLab3-6.h\0"
 END
 
 2 TEXTINCLUDE 
@@ -53,12 +53,46 @@ END
 
 IDR_MENU1 MENU
 BEGIN
-    MENUITEM "Выход",                       ID_EXIT
+    MENUITEM "Выход",                       ID_40008
     POPUP "Действия"
     BEGIN
         MENUITEM "Запустить",                   ID_START, GRAYED
         MENUITEM "Остановить",                  ID_STOP
     END
+END
+
+IDR_CONTEXT_MENU MENU
+BEGIN
+    POPUP "ContextMenu"
+    BEGIN
+        MENUITEM SEPARATOR
+        MENUITEM "bitmap1",                     ID_BITMAP1
+        MENUITEM "bitmap2",                     ID_BITMAP2
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDB_BITMAP1             BITMAP                  "bitmap1.bmp"
+
+IDB_BITMAP2             BITMAP                  "bitmap2.bmp"
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE
+BEGIN
+    IDS_STRING107           "Заголовок 1"
+    IDS_STRING108           "Заголовок 2"
+    IDS_STRING109           "Заголовок 3"
+    IDS_STRING110           "Заголовок 4"
 END
 
 #endif    // Русский (Россия) resources
