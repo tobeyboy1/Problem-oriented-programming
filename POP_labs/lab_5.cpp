@@ -3,7 +3,7 @@
 #include <windows.h>
 #include <math.h>
 #include <time.h>
-#include "resource.h"
+#include "resourceLab3-6.h"
 
 #define NAME_CAPACITY 100
 #define TIMER_ID 1001

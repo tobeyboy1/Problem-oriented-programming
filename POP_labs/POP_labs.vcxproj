@@ -22,14 +22,10 @@
     <ResourceCompile Include="POP_labs3-6.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="bitmap1.bmp" />
-    <Image Include="bitmap2.bmp" />
+    <ClCompile Include="lab_5.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resourceLab3-6.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="lab6.1.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
