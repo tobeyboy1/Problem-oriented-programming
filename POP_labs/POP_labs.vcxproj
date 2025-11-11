@@ -29,7 +29,7 @@
     <ClInclude Include="resourceLab3-6.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="lab6.cpp" />
+    <ClCompile Include="lab6.1.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
