@@ -1,198 +1,249 @@
-﻿#define _USE_MATH_DEFINES
+﻿#define  STRICT
+#define  WIN32_LEAN_AND_MEAN
 
 #include <windows.h>
-#include <math.h>
-#include <time.h>
-#include "resource.h"
+#include <iostream>
 
-#define NAME_CAPACITY 100
-#define TIMER_ID 1001
+#define N 100
+#define M 1
+#define BUTTON_HEIGHT 25
+#define BUTTON_WIDTH 100
+#define BUTTON_OFFSET 10
 
-#define ROTATION_STEP 30
-#define FONT_HEIGHT_CHANGE 6
-#define START_FONT_HEIGHT 60
-#define TIMER_INTERVAL 1000
+LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
-#define MESSAGE "Test string"
-
-struct UserData {
-    int rotationAngle;
-    int fontSize;
-};
-
-LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
-int WINAPI WinMain(
-    _In_ HINSTANCE hInstance,
-    _In_opt_ HINSTANCE hPrevInstance,
-    _In_ LPSTR lpCmdLine,
-    _In_ int nCmdShow
-)
+int APIENTRY WinMain(_In_ HINSTANCE hInstance,
+	_In_opt_ HINSTANCE hPrevInstance,
+	_In_ LPSTR     lpCmdLine,
+	_In_ int       nCmdShow)
 {
-    srand(time(NULL));
+	//Registering the window class
+	LPCTSTR szClass = TEXT("DiskTester32");
 
-    char CLASS_NAME[NAME_CAPACITY]{};
+	WNDCLASS wc = { 0 };
+	wc.lpfnWndProc = WndProc;
+	wc.hInstance = hInstance;
+	wc.lpszClassName = szClass;
+	wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
 
-    WNDCLASS wc = { 0 };
-    wc.lpfnWndProc = MainWndProc;
-    wc.hInstance = hInstance;
-    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-    wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-    wc.style = CS_HREDRAW | CS_VREDRAW;
-    wc.lpszMenuName = MAKEINTRESOURCE(IDR_MENU1);
+	if (!RegisterClass(&wc)) return -1;
 
-    int i = 0;
+	// Get the screen dimensions
+	int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+	int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
-    do {
-        CLASS_NAME[i] = 33 + rand() % 94;
-        i++;
-        wc.lpszClassName = CLASS_NAME;
-    } while (!RegisterClass(&wc) && i < NAME_CAPACITY);
+	// Calculate the position to center the window
+	int windowWidth = 0.5 * screenWidth;
+	int windowHeight = 0.5 * screenHeight;
+	int windowX = (screenWidth - windowWidth) / 2;
+	int windowY = (screenHeight - windowHeight) / 2;
 
-    UserData userData = { 0 };
+	HWND hWnd = ::CreateWindow(szClass, "OverLapped", WS_OVERLAPPEDWINDOW,
+		windowX, windowY, windowWidth, windowHeight, NULL, NULL, hInstance, NULL);
+	if (!hWnd) {
+		return -1;
+	}
 
-    HWND hWnd = CreateWindowEx(
-        0,
-        CLASS_NAME,
-        "Lab5",
-        WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-        NULL, NULL, hInstance, &userData
-    );
+	SendMessage(GetDlgItem(hWnd, M), BM_SETSTATE, BST_PUSHED, 0);
+	SendMessage(GetDlgItem(hWnd, M + N), BM_SETCHECK, BST_CHECKED, 0);
 
-    if (hWnd == NULL) return 0;
+	int position = M;
+	SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG)&position);
 
-    ShowWindow(hWnd, nCmdShow);
+	ShowWindow(hWnd, nCmdShow);
 
-    MSG msg;
-    while (GetMessage(&msg, NULL, 0, 0)) {
-        DispatchMessage(&msg);
-    }
+	MSG msg;
+	while (GetMessage(&msg, NULL, 0, 0)) {
+		DispatchMessage(&msg);
+	}
 
-    return 0;
+	return 0;
 }
 
-LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
-    switch (msg) {
-    case WM_CREATE: {
-        CREATESTRUCT* pCreate = (CREATESTRUCT*)(lParam);
-        UserData* pUserData = (UserData*)(pCreate->lpCreateParams);
+LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch (message)
+	{
+	case WM_CREATE:
+	{
+		char buff[20] = { 0 };
+		for (int i = 1; i <= N; i++)
+		{
+			sprintf_s(buff, "Кнопка %d", i);
 
-        SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)pUserData);
+			CreateWindow
+			(
+				"BUTTON",
+				buff,
+				WS_CHILDWINDOW | WS_VISIBLE | BS_PUSHBUTTON,
+				BUTTON_OFFSET,
+				BUTTON_OFFSET + (i - 1) * (BUTTON_OFFSET + BUTTON_HEIGHT),
+				BUTTON_WIDTH,
+				BUTTON_HEIGHT,
+				hWnd,
+				(HMENU)i,
+				(HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE),
+				NULL
+			);
 
-        pUserData->fontSize = START_FONT_HEIGHT;
+			sprintf_s(buff, "Радио %d", i);
 
-        PostMessage(hWnd, WM_COMMAND, MAKELONG(ID_START, 0), NULL);
-        return 0;
-    }
+			CreateWindow
+			(
+				"BUTTON",
+				buff,
+				WS_CHILDWINDOW | WS_VISIBLE | BS_RADIOBUTTON,
+				BUTTON_WIDTH + 20,
+				BUTTON_OFFSET + (i - 1) * (BUTTON_OFFSET + BUTTON_HEIGHT),
+				BUTTON_WIDTH,
+				BUTTON_HEIGHT,
+				hWnd,
+				(HMENU)(i + N),
+				(HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE),
+				NULL
+			);
+		}
+		break;
+	}
 
-    case WM_COMMAND: {
-        switch (LOWORD(wParam)) {
-        case ID_EXIT:
-            PostMessage(hWnd, WM_DESTROY, NULL, NULL);
-            break;
+	case WM_COMMAND:
+	{
+		SCROLLINFO vscroll;
+		vscroll.cbSize = sizeof(SCROLLINFO);
+		vscroll.fMask = SIF_RANGE | SIF_POS;
 
-        case ID_STOP:
-            KillTimer(hWnd, TIMER_ID);
-            EnableMenuItem(GetMenu(hWnd), ID_STOP, MF_GRAYED);
-            EnableMenuItem(GetMenu(hWnd), ID_START, MF_ENABLED);
-            break;
+		GetScrollInfo(hWnd, SB_VERT, &vscroll);
+		int button_number_onPage = (GetSystemMetrics(SM_CYSCREEN) - BUTTON_OFFSET) / (BUTTON_OFFSET + BUTTON_HEIGHT);
+		int first_visiable_button = vscroll.nPos * (N - button_number_onPage) / vscroll.nMax + 1;
 
-        case ID_START:
-            SetTimer(hWnd, TIMER_ID, TIMER_INTERVAL, NULL);
-            EnableMenuItem(GetMenu(hWnd), ID_STOP, MF_ENABLED);
-            EnableMenuItem(GetMenu(hWnd), ID_START, MF_GRAYED);
-            break;
-        }
-        return 0;
-    }
+		//int prevposition = GetWindowLongPtr(hWnd, GWLP_USERDATA);
+		int ButtonID = LOWORD(wParam);
 
-    case WM_TIMER: {
-        UserData* pUserData = (UserData*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+		if (ButtonID > N)
+		{
+			ButtonID -= N;
+		}
 
-        pUserData->rotationAngle = (pUserData->rotationAngle + ROTATION_STEP) % 360;
-        InvalidateRect(hWnd, NULL, TRUE);
-        return 0;
-    }
+		if (ButtonID != GetWindowLongPtr(hWnd, GWLP_USERDATA))
+		{
+			SendMessage(GetDlgItem(hWnd, GetWindowLongPtr(hWnd, GWLP_USERDATA)), BM_SETSTATE, BST_UNCHECKED, 0);
+			SendMessage(GetDlgItem(hWnd, GetWindowLongPtr(hWnd, GWLP_USERDATA) + N), BM_SETCHECK, BST_UNCHECKED, 0);
+			SendMessage(GetDlgItem(hWnd, ButtonID), BM_SETSTATE, BST_PUSHED, 0);
+			SendMessage(GetDlgItem(hWnd, ButtonID + N), BM_SETCHECK, BST_CHECKED, 0);
 
-    case WM_PAINT: {
-        UserData* pUserData = (UserData*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+			prevposition = ButtonID + first_visiable_button - 1;
+		}
+		else
+		{
+			SendMessage(GetDlgItem(hWnd, ButtonID), BM_SETSTATE, BST_PUSHED, 0);
+		}
 
-        PAINTSTRUCT ps;
-        HDC hdc = BeginPaint(hWnd, &ps);
+		prevposition = ButtonID; // Добавленный код для сброса предыдущей кнопки
 
-        RECT clientRect;
-        GetClientRect(hWnd, &clientRect);
+		return 0;
+	}
+	case WM_SIZE: {
+		int height = N * (BUTTON_OFFSET + BUTTON_HEIGHT) + BUTTON_OFFSET;
+		SCROLLINFO scrInfo;
+		scrInfo.cbSize = sizeof(SCROLLINFO);
 
-        FLOAT centerX = clientRect.right / 2;
-        FLOAT centerY = clientRect.bottom / 2;
+		scrInfo.nPage = HIWORD(lParam); //размер страницы устанавливаем равным высоте окна
 
-        HFONT hFont = CreateFont(
-            pUserData->fontSize, 0, 0, 0, FW_NORMAL,
-            FALSE, FALSE, FALSE, DEFAULT_CHARSET,
-            OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-            DEFAULT_QUALITY, DEFAULT_PITCH, "Arial"
-        );
+		scrInfo.nMin = 0; //диапазон прокрутки устанавливаем по размеру содержимого
+		scrInfo.nMax = height; //(вместо CONTENT_HEIGHT подставь нужное значение)
 
-        HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
+		scrInfo.fMask = SIF_RANGE | SIF_PAGE; //применяем новые параметры
+		SetScrollInfo(hWnd, SB_VERT, &scrInfo, TRUE);
+		return 0;
+	}
 
-        SetTextAlign(hdc, TA_CENTER | TA_BASELINE); //выравнивание текста
+	case WM_VSCROLL: {
+		SCROLLINFO scrInfo;
+		scrInfo.cbSize = sizeof(SCROLLINFO);
 
-        SetGraphicsMode(hdc, GM_ADVANCED); //позволяет видоизменять объекты для отрисовки
+		scrInfo.fMask = SIF_ALL; //получаем текущие параметры scrollbar-а
+		GetScrollInfo(hWnd, SB_VERT, &scrInfo);
 
-        double radians = pUserData->rotationAngle * M_PI / 180.0;
+		int currentPos = scrInfo.nPos; //запоминаем текущее положение содержимого
 
-        XFORM xform;
-        xform.eM11 = (FLOAT)cos(radians);
-        xform.eM12 = (FLOAT)sin(radians);
-        xform.eM21 = (FLOAT)-sin(radians);
-        xform.eM22 = (FLOAT)cos(radians);
-        xform.eDx = centerX; //смещение
-        xform.eDy = centerY;
+		switch (LOWORD(wParam)) { //определяем действие пользователя и изменяем положение
+		case SB_LINEUP: //клик на стрелку вверх
+			scrInfo.nPos -= 10;
+			break;
+		case SB_LINEDOWN: //клик на стрелку вниз 
+			scrInfo.nPos += 10;
+			break;
+		case SB_PAGEUP:
+			scrInfo.nPos -= scrInfo.nPage;
+			break;
+		case SB_PAGEDOWN:
+			scrInfo.nPos += scrInfo.nPage;
+			break;
+		case SB_THUMBTRACK: //перетаскивание ползунка
+			scrInfo.nPos = scrInfo.nTrackPos;
+			break;
+		case SB_TOP:
+			scrInfo.nPos = scrInfo.nMin;
+			break;
+		case SB_BOTTOM:
+			scrInfo.nPos = scrInfo.nMax;
+			break;
+		default: return 0; //все прочие действия (например нажатие PageUp/PageDown) игнорируем
+		}
 
-        SetWorldTransform(hdc, &xform);
+		scrInfo.fMask = SIF_POS; //пробуем применить новое положение
+		SetScrollInfo(hWnd, SB_VERT, &scrInfo, TRUE);
+		GetScrollInfo(hWnd, SB_VERT, &scrInfo); //(см. примечание ниже)
 
-        TextOut(hdc, 0, pUserData->fontSize / 4, MESSAGE, strlen(MESSAGE));
+		int yScroll = currentPos - scrInfo.nPos; // вычисляем величину прокрутки
+		ScrollWindow(hWnd, 0, yScroll, NULL, NULL); //выполняем прокрутку
+		return 0;
+	}
+	case WM_KEYDOWN:
+	{
+		switch (LOWORD(wParam))
+		{
+		case VK_UP:
+		{
+			PostMessage(hWnd, WM_VSCROLL, SB_LINEUP, NULL);
+			break;
+		}
+		case VK_DOWN:
+		{
+			PostMessage(hWnd, WM_VSCROLL, SB_LINEDOWN, NULL);
+			break;
+		}
+		case VK_END:
+		{
+			PostMessage(hWnd, WM_VSCROLL, SB_BOTTOM, NULL);
+			break;
+		}
+		case VK_HOME:
+		{
+			PostMessage(hWnd, WM_VSCROLL, SB_TOP, NULL);
+			break;
+		}
+		case VK_PRIOR:
+		{
+			PostMessage(hWnd, WM_VSCROLL, SB_PAGEUP, NULL);
+			break;
+		}
+		case VK_NEXT:
+		{
+			PostMessage(hWnd, WM_VSCROLL, SB_PAGEDOWN, NULL);
+			break;
+		}
+		}
+		break;
+	}
 
-        SelectObject(hdc, hOldFont);
-        DeleteObject(hFont);
+	case WM_DESTROY:
+	{
+		PostQuitMessage(0);
+		break;
+	}
+	}
 
-        EndPaint(hWnd, &ps);
-        return 0;
-    }
-
-    case WM_LBUTTONUP: {
-        UserData* pUserData = (UserData*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
-
-        pUserData->fontSize += FONT_HEIGHT_CHANGE;
-        InvalidateRect(hWnd, NULL, TRUE);
-        return 0;
-    }
-
-    case WM_RBUTTONUP: {
-        UserData* pUserData = (UserData*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
-
-        if (pUserData->fontSize > FONT_HEIGHT_CHANGE) {
-            pUserData->fontSize -= FONT_HEIGHT_CHANGE;
-            InvalidateRect(hWnd, NULL, TRUE);
-        }
-        return 0;
-    }
-
-    case WM_SIZE: {
-        InvalidateRect(hWnd, NULL, TRUE);
-        return 0;
-    }
-
-    case WM_DESTROY: {
-        KillTimer(hWnd, TIMER_ID);
-        PostQuitMessage(0);
-        return 0;
-    }
-
-    default:
-        return DefWindowProc(hWnd, msg, wParam, lParam);
-    }
-    return 0;
+	return DefWindowProc(hWnd, message, wParam, lParam);
 }
