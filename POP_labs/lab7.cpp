@@ -10,7 +10,7 @@
 #define BUTTON_WIDTH 100
 #define BUTTON_OFFSET 10
 
-#define N 50  // кол-во кнопок
+#define N 5000  // кол-во кнопок
 #define M 18     // стартовая активная кнопка
 
 #define startButton (M*2)
@@ -71,9 +71,6 @@ int WINAPI WinMain(
 
     ShowWindow(hWnd, nCmdShow);
 
-    PostMessage(GetDlgItem(hWnd, startButton + BUTTON_ID_START), BM_SETSTATE, BST_PUSHED, 0);
-    PostMessage(GetDlgItem(hWnd, startButton + BUTTON_ID_START + 1), BM_SETCHECK, BST_CHECKED, 0);
-
     MSG msg;
     while (GetMessage(&msg, NULL, 0, 0)) {
         DispatchMessage(&msg);
@@ -125,6 +122,9 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
         }
         pUserData->currentActive = startButton + BUTTON_ID_START;
 
+        SendMessage(GetDlgItem(hWnd, startButton + BUTTON_ID_START), BM_SETSTATE, BST_PUSHED, 0);
+        SendMessage(GetDlgItem(hWnd, startButton + BUTTON_ID_START + 1), BM_SETCHECK, BST_CHECKED, 0);
+
         SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)pUserData);
         return 0;
     }
@@ -142,17 +142,17 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
 
             if (LOWORD(wParam) != pUserData->currentActive) {
                 // снятие старого состояния
-                PostMessage(GetDlgItem(hWnd, pUserData->currentActive), BM_SETSTATE, BST_UNCHECKED, 0);
-                PostMessage(GetDlgItem(hWnd, pUserData->currentActive + 1), BM_SETCHECK, BST_UNCHECKED, 0);
+                SendMessage(GetDlgItem(hWnd, pUserData->currentActive), BM_SETSTATE, BST_UNCHECKED, 0);
+                SendMessage(GetDlgItem(hWnd, pUserData->currentActive + 1), BM_SETCHECK, BST_UNCHECKED, 0);
 
                 // установка нового
                 pUserData->currentActive = baseID;
-                PostMessage(GetDlgItem(hWnd, baseID), BM_SETSTATE, BST_PUSHED, 0);
-                PostMessage(GetDlgItem(hWnd, baseID + 1), BM_SETCHECK, BST_CHECKED, 0);
+                SendMessage(GetDlgItem(hWnd, baseID), BM_SETSTATE, BST_PUSHED, 0);
+                SendMessage(GetDlgItem(hWnd, baseID + 1), BM_SETCHECK, BST_CHECKED, 0);
                 SetFocus(hWnd);
             }
             else {
-                PostMessage(GetDlgItem(hWnd, baseID), BM_SETSTATE, BST_PUSHED, 0);
+                SendMessage(GetDlgItem(hWnd, baseID), BM_SETSTATE, BST_PUSHED, 0);
                 SetFocus(hWnd);
             }
         }
@@ -236,8 +236,8 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
 }
 
 void ScrollButton(HWND hWnd, UserData* pUserData, int scrollStep) {
-    PostMessage(GetDlgItem(hWnd, pUserData->currentActive), BM_SETSTATE, BST_UNCHECKED, 0);
-    PostMessage(GetDlgItem(hWnd, pUserData->currentActive + 1), BM_SETCHECK, BST_UNCHECKED, 0);
+    SendMessage(GetDlgItem(hWnd, pUserData->currentActive), BM_SETSTATE, BST_UNCHECKED, 0);
+    SendMessage(GetDlgItem(hWnd, pUserData->currentActive + 1), BM_SETCHECK, BST_UNCHECKED, 0);
 
     for (int i = 0; i < BSIZE; i++) {
         char buff[25] = { 0 };
@@ -254,6 +254,6 @@ void ScrollButton(HWND hWnd, UserData* pUserData, int scrollStep) {
         sprintf_s(buff, "Кнопка %d", (newID - BUTTON_ID_START) / 2);
         SetWindowText(pUserData->buttons[i][1], buff);
     }
-    PostMessage(GetDlgItem(hWnd, pUserData->currentActive), BM_SETSTATE, BST_PUSHED, 0);
-    PostMessage(GetDlgItem(hWnd, pUserData->currentActive + 1), BM_SETCHECK, BST_CHECKED, 0);
+    SendMessage(GetDlgItem(hWnd, pUserData->currentActive), BM_SETSTATE, BST_PUSHED, 0);
+    SendMessage(GetDlgItem(hWnd, pUserData->currentActive + 1), BM_SETCHECK, BST_CHECKED, 0);
 }
