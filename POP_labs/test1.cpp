@@ -7,7 +7,7 @@
 #define MIN_WIDTH (int)(1.2 * N)
 #define MIN_HEIGHT (int)(1.2 * M)
 
-// Минимальные данные: только буфер пикселей и предыдущая точка
+
 struct UserData {
     BYTE pixelBuffer[N][M];
     POINT prevPoint;
@@ -30,20 +30,15 @@ int WINAPI WinMain(
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
     wc.lpszClassName = CLASS_NAME;
     wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    wc.style = CS_HREDRAW | CS_VREDRAW;
     wc.lpszMenuName = MAKEINTRESOURCE(IDR_MENU1);
 
     if (!RegisterClass(&wc)) return -1;
 
-    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
-
-    int indentX = (int)(screenWidth * 0.07);  // 7% от ширины экрана
-    int indentY = (int)(screenHeight * 0.07); // 7% от высоты экрана
-
     HWND hWnd = CreateWindowEx(
         0,
         CLASS_NAME,
-        "Lab8",
+        "Пробел-смена отрисовки | Esc-очистка",
         WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT, CW_USEDEFAULT,
         MIN_WIDTH + GetSystemMetrics(SM_CXSIZEFRAME) * 2,
@@ -54,7 +49,7 @@ int WINAPI WinMain(
 
     ShowWindow(hWnd, nCmdShow);
 
-    UserData userData = { 0 };
+    UserData userData = {};
     userData.prevPoint.x = -1;
     userData.prevPoint.y = -1;
     userData.drawMethod = 0;
@@ -90,14 +85,12 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
         RECT clientRect;
         GetClientRect(hWnd, &clientRect);
 
-        // Центрируем прямоугольник рисования
+        // прямоугольник отрисовки
         int rectLeft = (clientRect.right - N) / 2;
         int rectTop = (clientRect.bottom - M) / 2;
-
-        // Создаём RECT для области рисования
         RECT drawRect = { rectLeft, rectTop, rectLeft + N, rectTop + M };
 
-        // Проверяем попадание точки в прямоугольник через PtInRect
+        // проверка на нахождении точки в прямоугольнике
         POINT pt = { x, y };
         if (PtInRect(&drawRect, pt)) {
 
@@ -136,16 +129,15 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
             RECT clientRect;
             GetClientRect(hWnd, &clientRect);
 
-            // Центрируем прямоугольник рисования
+            // прямоугольник отрисовки
             int rectLeft = (clientRect.right - N) / 2;
             int rectTop = (clientRect.bottom - M) / 2;
-
-            // Создаём RECT для области рисования
             RECT drawRect = { rectLeft, rectTop, rectLeft + N, rectTop + M };
 
-            // Проверяем попадание точки в прямоугольник через PtInRect
+            // проверка попадания точки в область
             POINT pt = { x, y };
             if (PtInRect(&drawRect, pt)) {
+
                 int bufX = x - rectLeft;
                 int bufY = y - rectTop;
 
@@ -159,21 +151,20 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
                         int dy = abs(bufY - pUserData->prevPoint.y);
                         int sx = (pUserData->prevPoint.x < bufX) ? 1 : -1;
                         int sy = (pUserData->prevPoint.y < bufY) ? 1 : -1;
-                        int err = dx - dy;
+                        int err = dx - dy; //определение направления движения линии
 
-                        // Временные координаты для алгоритма
+                        // координаты для отрисовки линнии
                         int x = pUserData->prevPoint.x;
                         int y = pUserData->prevPoint.y;
 
                         while (1) {
-                            // Устанавливаем пиксель в буфере
                             if (x >= 0 && x < N && y >= 0 && y < M) {
                                 pUserData->pixelBuffer[x][y] = 1;
                             }
 
                             if (x == bufX && y == bufY) break;
 
-                            int e2 = 2 * err;
+                            int e2 = 2 * err; //проверка допустимости выбранного направления
                             if (e2 > -dy) {
                                 err -= dy;
                                 x += sx;
@@ -205,11 +196,11 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
         RECT clientRect;
         GetClientRect(hWnd, &clientRect);
 
-        // Центрируем прямоугольник рисования
+        // прямоугольник отрисовки
         int rectLeft = (clientRect.right - N) / 2;
         int rectTop = (clientRect.bottom - M) / 2;
 
-        // Рамка прямоугольника
+        // рамка прямоугольника
         HPEN hBorderPen = CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
         HPEN hOldPen = (HPEN)SelectObject(hdc, hBorderPen);
         SelectObject(hdc, GetStockObject(NULL_BRUSH));
@@ -217,7 +208,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
         SelectObject(hdc, hOldPen);
         DeleteObject(hBorderPen);
 
-        // Пиксели из буфера
+        // размещение пикселей из буфера
         for (int i = 0; i < N; i++) {
             for (int j = 0; j < M; j++) {
                 if (pUserData->pixelBuffer[i][j]) {
@@ -227,11 +218,6 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
         }
 
         EndPaint(hWnd, &ps);
-        break;
-    }
-
-    case WM_SIZE: {
-        InvalidateRect(hWnd, NULL, TRUE);
         break;
     }
 
@@ -271,15 +257,10 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
         if (wParam == VK_SPACE) {
             pUserData->drawMethod = 1 - pUserData->drawMethod;
 
-            if (pUserData->drawMethod == 0) {
-                SetWindowText(hWnd, "Рисование - Метод: Точка (Пробел-смена, Esc-очистка)");
-            }
-            else {
-                SetWindowText(hWnd, "Рисование - Метод: Линия (Пробел-смена, Esc-очистка)");
-            }
         }
-        else if (wParam == VK_ESCAPE) {
-            for (int i = 0; i < N; i++) {
+
+        else if (wParam == VK_ESCAPE) { 
+            for (int i = 0; i < N; i++) { //обнуление точек (вроде ещё можно через memset)
                 for (int j = 0; j < M; j++) {
                     pUserData->pixelBuffer[i][j] = 0;
                 }
