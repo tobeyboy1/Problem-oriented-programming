@@ -19,7 +19,13 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="lab7.cpp" />
+    <ClInclude Include="resourceLab8.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="POP_lab8.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="test1.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

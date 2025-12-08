@@ -1,249 +1,317 @@
-﻿#define  STRICT
-#define  WIN32_LEAN_AND_MEAN
-
+﻿
 #include <windows.h>
-#include <iostream>
+#include "resourceLab8.h"
 
-#define N 100
-#define M 1
-#define BUTTON_HEIGHT 25
-#define BUTTON_WIDTH 100
-#define BUTTON_OFFSET 10
+#define CLASS_NAME "F(DSHNLK#NROUFYE(*nlk234nouo3yf98h23n"
+#define N 400
+#define M 300
+#define MIN_WIDTH (int)(1.2 * N)
+#define MIN_HEIGHT (int)(1.2 * M)
 
-LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
-int APIENTRY WinMain(_In_ HINSTANCE hInstance,
-	_In_opt_ HINSTANCE hPrevInstance,
-	_In_ LPSTR     lpCmdLine,
-	_In_ int       nCmdShow)
+// Минимальные данные: только буфер пикселей и предыдущая точка
+struct UserData {
+    BYTE pixelBuffer[N][M];
+    POINT prevPoint;
+    int drawMethod;
+};
+
+LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+int WINAPI WinMain(
+    _In_ HINSTANCE hInstance,
+    _In_opt_ HINSTANCE hPrevInstance,
+    _In_ LPSTR lpCmdLine,
+    _In_ int nCmdShow
+)
 {
-	//Registering the window class
-	LPCTSTR szClass = TEXT("DiskTester32");
 
-	WNDCLASS wc = { 0 };
-	wc.lpfnWndProc = WndProc;
-	wc.hInstance = hInstance;
-	wc.lpszClassName = szClass;
-	wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    WNDCLASS wc = { 0 };
+    wc.lpfnWndProc = MainWndProc;
+    wc.hInstance = hInstance;
+    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+    wc.lpszClassName = CLASS_NAME;
+    wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    wc.lpszMenuName = MAKEINTRESOURCE(IDR_MENU1);
 
-	if (!RegisterClass(&wc)) return -1;
+    if (!RegisterClass(&wc)) return -1;
 
-	// Get the screen dimensions
-	int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-	int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
-	// Calculate the position to center the window
-	int windowWidth = 0.5 * screenWidth;
-	int windowHeight = 0.5 * screenHeight;
-	int windowX = (screenWidth - windowWidth) / 2;
-	int windowY = (screenHeight - windowHeight) / 2;
+    int indentX = (int)(screenWidth * 0.07);  // 7% от ширины экрана
+    int indentY = (int)(screenHeight * 0.07); // 7% от высоты экрана
 
-	HWND hWnd = ::CreateWindow(szClass, "OverLapped", WS_OVERLAPPEDWINDOW,
-		windowX, windowY, windowWidth, windowHeight, NULL, NULL, hInstance, NULL);
-	if (!hWnd) {
-		return -1;
-	}
+    HWND hWnd = CreateWindowEx(
+        0,
+        CLASS_NAME,
+        "Lab8",
+        WS_OVERLAPPEDWINDOW,
+        CW_USEDEFAULT, CW_USEDEFAULT,
+        MIN_WIDTH + GetSystemMetrics(SM_CXSIZEFRAME) * 2,
+        MIN_HEIGHT + GetSystemMetrics(SM_CYCAPTION) + GetSystemMetrics(SM_CYSIZEFRAME) * 2,
+        NULL, NULL, hInstance, NULL);
 
-	SendMessage(GetDlgItem(hWnd, M), BM_SETSTATE, BST_PUSHED, 0);
-	SendMessage(GetDlgItem(hWnd, M + N), BM_SETCHECK, BST_CHECKED, 0);
+    if (hWnd == NULL) return 0;
 
-	int position = M;
-	SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG)&position);
+    ShowWindow(hWnd, nCmdShow);
 
-	ShowWindow(hWnd, nCmdShow);
+    UserData userData = { 0 };
+    userData.prevPoint.x = -1;
+    userData.prevPoint.y = -1;
+    SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)&userData);
 
-	MSG msg;
-	while (GetMessage(&msg, NULL, 0, 0)) {
-		DispatchMessage(&msg);
-	}
+    MSG msg;
+    while (GetMessage(&msg, NULL, 0, 0)) {
+        DispatchMessage(&msg);
+    }
 
-	return 0;
+    return 0;
 }
 
+LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
-LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-	switch (message)
-	{
-	case WM_CREATE:
-	{
-		char buff[20] = { 0 };
-		for (int i = 1; i <= N; i++)
-		{
-			sprintf_s(buff, "Кнопка %d", i);
+    switch (msg) {
 
-			CreateWindow
-			(
-				"BUTTON",
-				buff,
-				WS_CHILDWINDOW | WS_VISIBLE | BS_PUSHBUTTON,
-				BUTTON_OFFSET,
-				BUTTON_OFFSET + (i - 1) * (BUTTON_OFFSET + BUTTON_HEIGHT),
-				BUTTON_WIDTH,
-				BUTTON_HEIGHT,
-				hWnd,
-				(HMENU)i,
-				(HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE),
-				NULL
-			);
+    case WM_COMMAND: {
 
-			sprintf_s(buff, "Радио %d", i);
+        switch (LOWORD(wParam)) {
+        case ID_EXIT: DestroyWindow(hWnd); break;
+        }
+        return 0;
+    }
 
-			CreateWindow
-			(
-				"BUTTON",
-				buff,
-				WS_CHILDWINDOW | WS_VISIBLE | BS_RADIOBUTTON,
-				BUTTON_WIDTH + 20,
-				BUTTON_OFFSET + (i - 1) * (BUTTON_OFFSET + BUTTON_HEIGHT),
-				BUTTON_WIDTH,
-				BUTTON_HEIGHT,
-				hWnd,
-				(HMENU)(i + N),
-				(HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE),
-				NULL
-			);
-		}
-		break;
-	}
+    case WM_LBUTTONDOWN: {
+        UserData* pUserData = (UserData*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 
-	case WM_COMMAND:
-	{
-		SCROLLINFO vscroll;
-		vscroll.cbSize = sizeof(SCROLLINFO);
-		vscroll.fMask = SIF_RANGE | SIF_POS;
+        int x = LOWORD(lParam);
+        int y = HIWORD(lParam);
 
-		GetScrollInfo(hWnd, SB_VERT, &vscroll);
-		int button_number_onPage = (GetSystemMetrics(SM_CYSCREEN) - BUTTON_OFFSET) / (BUTTON_OFFSET + BUTTON_HEIGHT);
-		int first_visiable_button = vscroll.nPos * (N - button_number_onPage) / vscroll.nMax + 1;
+        RECT clientRect;
+        GetClientRect(hWnd, &clientRect);
 
-		//int prevposition = GetWindowLongPtr(hWnd, GWLP_USERDATA);
-		int ButtonID = LOWORD(wParam);
+        // Центрируем прямоугольник рисования
+        int rectLeft = (clientRect.right - N) / 2;
+        int rectTop = (clientRect.bottom - M) / 2;
 
-		if (ButtonID > N)
-		{
-			ButtonID -= N;
-		}
+        // Создаём RECT для области рисования
+        RECT drawRect = { rectLeft, rectTop, rectLeft + N, rectTop + M };
 
-		if (ButtonID != GetWindowLongPtr(hWnd, GWLP_USERDATA))
-		{
-			SendMessage(GetDlgItem(hWnd, GetWindowLongPtr(hWnd, GWLP_USERDATA)), BM_SETSTATE, BST_UNCHECKED, 0);
-			SendMessage(GetDlgItem(hWnd, GetWindowLongPtr(hWnd, GWLP_USERDATA) + N), BM_SETCHECK, BST_UNCHECKED, 0);
-			SendMessage(GetDlgItem(hWnd, ButtonID), BM_SETSTATE, BST_PUSHED, 0);
-			SendMessage(GetDlgItem(hWnd, ButtonID + N), BM_SETCHECK, BST_CHECKED, 0);
+        // Проверяем попадание точки в прямоугольник через PtInRect
+        POINT pt = { x, y };
+        if (PtInRect(&drawRect, pt)) {
 
-			prevposition = ButtonID + first_visiable_button - 1;
-		}
-		else
-		{
-			SendMessage(GetDlgItem(hWnd, ButtonID), BM_SETSTATE, BST_PUSHED, 0);
-		}
+            int bufX = x - rectLeft;
+            int bufY = y - rectTop;
 
-		prevposition = ButtonID; // Добавленный код для сброса предыдущей кнопки
+            if (bufX >= 0 && bufX < N && bufY >= 0 && bufY < M) {
+                if (pUserData->drawMethod == 0) {
+                    pUserData->pixelBuffer[bufX][bufY] = 1;
+                    HDC hdc = GetDC(hWnd);
+                    SetPixel(hdc, x, y, RGB(0, 0, 0));
+                    ReleaseDC(hWnd, hdc);
+                }
 
-		return 0;
-	}
-	case WM_SIZE: {
-		int height = N * (BUTTON_OFFSET + BUTTON_HEIGHT) + BUTTON_OFFSET;
-		SCROLLINFO scrInfo;
-		scrInfo.cbSize = sizeof(SCROLLINFO);
+                pUserData->prevPoint.x = bufX;
+                pUserData->prevPoint.y = bufY;
+            }
 
-		scrInfo.nPage = HIWORD(lParam); //размер страницы устанавливаем равным высоте окна
+            InvalidateRect(hWnd, NULL, FALSE);
+        }
+        break;
+    }
 
-		scrInfo.nMin = 0; //диапазон прокрутки устанавливаем по размеру содержимого
-		scrInfo.nMax = height; //(вместо CONTENT_HEIGHT подставь нужное значение)
+    case WM_LBUTTONUP: {
+        UserData* pUserData = (UserData*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 
-		scrInfo.fMask = SIF_RANGE | SIF_PAGE; //применяем новые параметры
-		SetScrollInfo(hWnd, SB_VERT, &scrInfo, TRUE);
-		return 0;
-	}
+        pUserData->prevPoint.x = -1;
+        pUserData->prevPoint.y = -1;
+        break;
+    }
 
-	case WM_VSCROLL: {
-		SCROLLINFO scrInfo;
-		scrInfo.cbSize = sizeof(SCROLLINFO);
+    case WM_MOUSEMOVE: {
+        UserData* pUserData = (UserData*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 
-		scrInfo.fMask = SIF_ALL; //получаем текущие параметры scrollbar-а
-		GetScrollInfo(hWnd, SB_VERT, &scrInfo);
+        if (wParam & MK_LBUTTON) {
+            int x = LOWORD(lParam);
+            int y = HIWORD(lParam);
 
-		int currentPos = scrInfo.nPos; //запоминаем текущее положение содержимого
+            RECT clientRect;
+            GetClientRect(hWnd, &clientRect);
 
-		switch (LOWORD(wParam)) { //определяем действие пользователя и изменяем положение
-		case SB_LINEUP: //клик на стрелку вверх
-			scrInfo.nPos -= 10;
-			break;
-		case SB_LINEDOWN: //клик на стрелку вниз 
-			scrInfo.nPos += 10;
-			break;
-		case SB_PAGEUP:
-			scrInfo.nPos -= scrInfo.nPage;
-			break;
-		case SB_PAGEDOWN:
-			scrInfo.nPos += scrInfo.nPage;
-			break;
-		case SB_THUMBTRACK: //перетаскивание ползунка
-			scrInfo.nPos = scrInfo.nTrackPos;
-			break;
-		case SB_TOP:
-			scrInfo.nPos = scrInfo.nMin;
-			break;
-		case SB_BOTTOM:
-			scrInfo.nPos = scrInfo.nMax;
-			break;
-		default: return 0; //все прочие действия (например нажатие PageUp/PageDown) игнорируем
-		}
+            // Центрируем прямоугольник рисования
+            int rectLeft = (clientRect.right - N) / 2;
+            int rectTop = (clientRect.bottom - M) / 2;
 
-		scrInfo.fMask = SIF_POS; //пробуем применить новое положение
-		SetScrollInfo(hWnd, SB_VERT, &scrInfo, TRUE);
-		GetScrollInfo(hWnd, SB_VERT, &scrInfo); //(см. примечание ниже)
+            // Создаём RECT для области рисования
+            RECT drawRect = { rectLeft, rectTop, rectLeft + N, rectTop + M };
 
-		int yScroll = currentPos - scrInfo.nPos; // вычисляем величину прокрутки
-		ScrollWindow(hWnd, 0, yScroll, NULL, NULL); //выполняем прокрутку
-		return 0;
-	}
-	case WM_KEYDOWN:
-	{
-		switch (LOWORD(wParam))
-		{
-		case VK_UP:
-		{
-			PostMessage(hWnd, WM_VSCROLL, SB_LINEUP, NULL);
-			break;
-		}
-		case VK_DOWN:
-		{
-			PostMessage(hWnd, WM_VSCROLL, SB_LINEDOWN, NULL);
-			break;
-		}
-		case VK_END:
-		{
-			PostMessage(hWnd, WM_VSCROLL, SB_BOTTOM, NULL);
-			break;
-		}
-		case VK_HOME:
-		{
-			PostMessage(hWnd, WM_VSCROLL, SB_TOP, NULL);
-			break;
-		}
-		case VK_PRIOR:
-		{
-			PostMessage(hWnd, WM_VSCROLL, SB_PAGEUP, NULL);
-			break;
-		}
-		case VK_NEXT:
-		{
-			PostMessage(hWnd, WM_VSCROLL, SB_PAGEDOWN, NULL);
-			break;
-		}
-		}
-		break;
-	}
+            // Проверяем попадание точки в прямоугольник через PtInRect
+            POINT pt = { x, y };
+            if (PtInRect(&drawRect, pt)) {
+                int bufX = x - rectLeft;
+                int bufY = y - rectTop;
 
-	case WM_DESTROY:
-	{
-		PostQuitMessage(0);
-		break;
-	}
-	}
+                if (bufX >= 0 && bufX < N && bufY >= 0 && bufY < M) {
+                    if (pUserData->drawMethod == 0) {
+                        pUserData->pixelBuffer[bufX][bufY] = 1;
+                        HDC hdc = GetDC(hWnd);
+                        SetPixel(hdc, x, y, RGB(0, 0, 0));
+                        ReleaseDC(hWnd, hdc);
+                    }
+                    else if (pUserData->drawMethod == 1 && pUserData->prevPoint.x != -1) {
+                        int dx = abs(bufX - pUserData->prevPoint.x);
+                        int dy = abs(bufY - pUserData->prevPoint.y);
+                        int sx = (pUserData->prevPoint.x < bufX) ? 1 : -1;
+                        int sy = (pUserData->prevPoint.y < bufY) ? 1 : -1;
+                        int err = dx - dy; //вычисление ошибки для выбора направления движения
 
-	return DefWindowProc(hWnd, message, wParam, lParam);
+                        while (1) {
+                            if (pUserData->prevPoint.x >= 0 && pUserData->prevPoint.x < N && pUserData->prevPoint.y >= 0 && pUserData->prevPoint.y < M) {
+                                pUserData->pixelBuffer[pUserData->prevPoint.x][pUserData->prevPoint.y] = 1;
+                            }
+
+                            if (pUserData->prevPoint.x == bufX && pUserData->prevPoint.y == bufY) break;
+
+                            int e2 = 2 * err; //для проверки допустимости размера ошибки
+                            if (e2 > -dy) {
+                                err -= dy;
+                                pUserData->prevPoint.x += sx;
+                            }
+                            if (e2 < dx) {
+                                err += dx;
+                                pUserData->prevPoint.y += sy;
+                            }
+                        }
+
+                        HDC hdc = GetDC(hWnd);
+                        HPEN hPen = CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
+                        HPEN hOldPen = (HPEN)SelectObject(hdc, hPen);
+
+                        MoveToEx(hdc,
+                            pUserData->prevPoint.x + rectLeft,
+                            pUserData->prevPoint.y + rectTop,
+                            NULL);
+                        LineTo(hdc, x, y);
+
+                        SelectObject(hdc, hOldPen);
+                        DeleteObject(hPen);
+                        ReleaseDC(hWnd, hdc); //узнать что делает
+                    }
+
+                    pUserData->prevPoint.x = bufX;
+                    pUserData->prevPoint.y = bufY;
+
+                    InvalidateRect(hWnd, NULL, FALSE);
+                }
+            }
+        }
+        break;
+    }
+
+    case WM_PAINT: {
+        UserData* pUserData = (UserData*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hWnd, &ps);
+
+        RECT clientRect;
+        GetClientRect(hWnd, &clientRect);
+
+        // Центрируем прямоугольник рисования
+        int rectLeft = (clientRect.right - N) / 2;
+        int rectTop = (clientRect.bottom - M) / 2;
+
+        // Рамка прямоугольника
+        HPEN hBorderPen = CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
+        HPEN hOldPen = (HPEN)SelectObject(hdc, hBorderPen);
+        SelectObject(hdc, GetStockObject(NULL_BRUSH));
+        Rectangle(hdc, rectLeft, rectTop, rectLeft + N, rectTop + M);
+        SelectObject(hdc, hOldPen);
+        DeleteObject(hBorderPen);
+
+        // Пиксели из буфера
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < M; j++) {
+                if (pUserData->pixelBuffer[i][j]) {
+                    SetPixel(hdc, rectLeft + i, rectTop + j, RGB(0, 0, 0));
+                }
+            }
+        }
+
+        EndPaint(hWnd, &ps);
+        break;
+    }
+
+    case WM_SIZE: {
+        InvalidateRect(hWnd, NULL, TRUE);
+        break;
+    }
+
+    case WM_SIZING: {
+        RECT* pRect = (RECT*)lParam;
+
+        if (pRect->right - pRect->left < MIN_WIDTH) {
+            switch (wParam) {
+            case WMSZ_LEFT:
+            case WMSZ_TOPLEFT:
+            case WMSZ_BOTTOMLEFT:
+                pRect->left = pRect->right - MIN_WIDTH;
+                break;
+            default:
+                pRect->right = pRect->left + MIN_WIDTH;
+                break;
+            }
+        }
+
+        if (pRect->bottom - pRect->top < MIN_HEIGHT) {
+            switch (wParam) {
+            case WMSZ_TOP:
+            case WMSZ_TOPLEFT:
+            case WMSZ_TOPRIGHT:
+                pRect->top = pRect->bottom - MIN_HEIGHT;
+                break;
+            default:
+                pRect->bottom = pRect->top + MIN_HEIGHT;
+                break;
+            }
+        }
+        break;
+    }
+    case WM_KEYDOWN: {
+        UserData* pUserData = (UserData*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+
+        if (wParam == VK_SPACE) {
+            pUserData->drawMethod = 1 - pUserData->drawMethod;
+
+            if (pUserData->drawMethod == 0) {
+                SetWindowText(hWnd, "Рисование - Метод: Точка (Пробел-смена, Esc-очистка)");
+            }
+            else {
+                SetWindowText(hWnd, "Рисование - Метод: Линия (Пробел-смена, Esc-очистка)");
+            }
+        }
+        else if (wParam == VK_ESCAPE) {
+            for (int i = 0; i < N; i++) {
+                for (int j = 0; j < M; j++) {
+                    pUserData->pixelBuffer[i][j] = 0;
+                }
+            }
+            pUserData->prevPoint.x = -1;
+            pUserData->prevPoint.y = -1;
+            InvalidateRect(hWnd, NULL, TRUE);
+        }
+        break;
+    }
+
+    case WM_DESTROY: {
+
+        PostQuitMessage(0);
+        return 0;
+    }
+
+    default:
+        return DefWindowProc(hWnd, msg, wParam, lParam);
+    }
+    return 0;
 }
