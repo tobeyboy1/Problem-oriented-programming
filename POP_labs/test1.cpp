@@ -1,5 +1,4 @@
-﻿
-#include <windows.h>
+﻿#include <windows.h>
 #include "resourceLab8.h"
 
 #define CLASS_NAME "F(DSHNLK#NROUFYE(*nlk234nouo3yf98h23n"
@@ -7,7 +6,6 @@
 #define M 300
 #define MIN_WIDTH (int)(1.2 * N)
 #define MIN_HEIGHT (int)(1.2 * M)
-
 
 // Минимальные данные: только буфер пикселей и предыдущая точка
 struct UserData {
@@ -59,6 +57,8 @@ int WINAPI WinMain(
     UserData userData = { 0 };
     userData.prevPoint.x = -1;
     userData.prevPoint.y = -1;
+    userData.drawMethod = 0;
+
     SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)&userData);
 
     MSG msg;
@@ -107,9 +107,6 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
             if (bufX >= 0 && bufX < N && bufY >= 0 && bufY < M) {
                 if (pUserData->drawMethod == 0) {
                     pUserData->pixelBuffer[bufX][bufY] = 1;
-                    HDC hdc = GetDC(hWnd);
-                    SetPixel(hdc, x, y, RGB(0, 0, 0));
-                    ReleaseDC(hWnd, hdc);
                 }
 
                 pUserData->prevPoint.x = bufX;
@@ -155,48 +152,38 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
                 if (bufX >= 0 && bufX < N && bufY >= 0 && bufY < M) {
                     if (pUserData->drawMethod == 0) {
                         pUserData->pixelBuffer[bufX][bufY] = 1;
-                        HDC hdc = GetDC(hWnd);
-                        SetPixel(hdc, x, y, RGB(0, 0, 0));
-                        ReleaseDC(hWnd, hdc);
                     }
                     else if (pUserData->drawMethod == 1 && pUserData->prevPoint.x != -1) {
+
                         int dx = abs(bufX - pUserData->prevPoint.x);
                         int dy = abs(bufY - pUserData->prevPoint.y);
                         int sx = (pUserData->prevPoint.x < bufX) ? 1 : -1;
                         int sy = (pUserData->prevPoint.y < bufY) ? 1 : -1;
-                        int err = dx - dy; //вычисление ошибки для выбора направления движения
+                        int err = dx - dy;
+
+                        // Временные координаты для алгоритма
+                        int x = pUserData->prevPoint.x;
+                        int y = pUserData->prevPoint.y;
 
                         while (1) {
-                            if (pUserData->prevPoint.x >= 0 && pUserData->prevPoint.x < N && pUserData->prevPoint.y >= 0 && pUserData->prevPoint.y < M) {
-                                pUserData->pixelBuffer[pUserData->prevPoint.x][pUserData->prevPoint.y] = 1;
+                            // Устанавливаем пиксель в буфере
+                            if (x >= 0 && x < N && y >= 0 && y < M) {
+                                pUserData->pixelBuffer[x][y] = 1;
                             }
 
-                            if (pUserData->prevPoint.x == bufX && pUserData->prevPoint.y == bufY) break;
+                            if (x == bufX && y == bufY) break;
 
-                            int e2 = 2 * err; //для проверки допустимости размера ошибки
+                            int e2 = 2 * err;
                             if (e2 > -dy) {
                                 err -= dy;
-                                pUserData->prevPoint.x += sx;
+                                x += sx;
                             }
                             if (e2 < dx) {
                                 err += dx;
-                                pUserData->prevPoint.y += sy;
+                                y += sy;
                             }
                         }
 
-                        HDC hdc = GetDC(hWnd);
-                        HPEN hPen = CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
-                        HPEN hOldPen = (HPEN)SelectObject(hdc, hPen);
-
-                        MoveToEx(hdc,
-                            pUserData->prevPoint.x + rectLeft,
-                            pUserData->prevPoint.y + rectTop,
-                            NULL);
-                        LineTo(hdc, x, y);
-
-                        SelectObject(hdc, hOldPen);
-                        DeleteObject(hPen);
-                        ReleaseDC(hWnd, hdc); //узнать что делает
                     }
 
                     pUserData->prevPoint.x = bufX;
