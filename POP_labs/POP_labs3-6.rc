@@ -53,7 +53,7 @@ END
 
 IDR_MENU1 MENU
 BEGIN
-    MENUITEM "Выход",                       ID_40008
+    MENUITEM "Выход",                       ID_EXIT
     POPUP "Действия"
     BEGIN
         MENUITEM "Запустить",                   ID_START, GRAYED
