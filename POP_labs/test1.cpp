@@ -52,7 +52,7 @@ int WINAPI WinMain(
     UserData userData = {};
     userData.prevPoint.x = -1;
     userData.prevPoint.y = -1;
-    userData.drawMethod = 0;
+    //userData.drawMethod = 0;
 
     SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)&userData);
 
@@ -64,6 +64,8 @@ int WINAPI WinMain(
     return 0;
 }
 
+
+//по-хорошему нужно ещё добавить обработчик mouse_leave и сбрасывать координаты предыдущей точки при выходе за экран
 LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
     switch (msg) {
@@ -97,14 +99,12 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
             int bufX = x - rectLeft;
             int bufY = y - rectTop;
 
-            if (bufX >= 0 && bufX < N && bufY >= 0 && bufY < M) {
-                if (pUserData->drawMethod == 0) {
-                    pUserData->pixelBuffer[bufX][bufY] = 1;
-                }
-
-                pUserData->prevPoint.x = bufX;
-                pUserData->prevPoint.y = bufY;
+            if (pUserData->drawMethod == 0) {
+                pUserData->pixelBuffer[bufX][bufY] = 1;
             }
+
+            pUserData->prevPoint.x = bufX;
+            pUserData->prevPoint.y = bufY;
 
             InvalidateRect(hWnd, NULL, FALSE);
         }
