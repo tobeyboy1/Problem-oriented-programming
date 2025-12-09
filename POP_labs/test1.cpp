@@ -141,47 +141,46 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
                 int bufX = x - rectLeft;
                 int bufY = y - rectTop;
 
-                if (bufX >= 0 && bufX < N && bufY >= 0 && bufY < M) {
-                    if (pUserData->drawMethod == 0) {
-                        pUserData->pixelBuffer[bufX][bufY] = 1;
-                    }
-                    else if (pUserData->drawMethod == 1 && pUserData->prevPoint.x != -1) {
+                if (pUserData->drawMethod == 0) {
+                    pUserData->pixelBuffer[bufX][bufY] = 1;
+                }
 
-                        int dx = abs(bufX - pUserData->prevPoint.x);
-                        int dy = abs(bufY - pUserData->prevPoint.y);
-                        int sx = (pUserData->prevPoint.x < bufX) ? 1 : -1;
-                        int sy = (pUserData->prevPoint.y < bufY) ? 1 : -1;
-                        int err = dx - dy; //определение направления движения линии
+                else if (pUserData->drawMethod == 1 && pUserData->prevPoint.x != -1) {
 
-                        // координаты для отрисовки линнии
-                        int x = pUserData->prevPoint.x;
-                        int y = pUserData->prevPoint.y;
+                    int dx = abs(bufX - pUserData->prevPoint.x);
+                    int dy = abs(bufY - pUserData->prevPoint.y);
+                    int sx = (pUserData->prevPoint.x < bufX) ? 1 : -1; //направление шага
+                    int sy = (pUserData->prevPoint.y < bufY) ? 1 : -1;
+                    int err = dx - dy; //определение направления движения линии
 
-                        while (1) {
-                            if (x >= 0 && x < N && y >= 0 && y < M) {
-                                pUserData->pixelBuffer[x][y] = 1;
-                            }
+                    // координаты для отрисовки линнии
+                    int x = pUserData->prevPoint.x;
+                    int y = pUserData->prevPoint.y;
 
-                            if (x == bufX && y == bufY) break;
-
-                            int e2 = 2 * err; //проверка допустимости выбранного направления
-                            if (e2 > -dy) {
-                                err -= dy;
-                                x += sx;
-                            }
-                            if (e2 < dx) {
-                                err += dx;
-                                y += sy;
-                            }
+                    while (1) {
+                        if (x >= 0 && x < N && y >= 0 && y < M) {
+                            pUserData->pixelBuffer[x][y] = 1;
                         }
 
+                        if (x == bufX && y == bufY) break;
+
+                        int e2 = 2 * err; //проверка допустимости выбранного направления
+                        if (e2 > -dy) {
+                            err -= dy;
+                            x += sx;
+                        }
+                        if (e2 < dx) {
+                            err += dx;
+                            y += sy;
+                        }
                     }
 
-                    pUserData->prevPoint.x = bufX;
-                    pUserData->prevPoint.y = bufY;
-
-                    InvalidateRect(hWnd, NULL, FALSE);
                 }
+
+                pUserData->prevPoint.x = bufX;
+                pUserData->prevPoint.y = bufY;
+
+                InvalidateRect(hWnd, NULL, FALSE);
             }
         }
         break;
@@ -254,12 +253,14 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
     case WM_KEYDOWN: {
         UserData* pUserData = (UserData*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 
-        if (wParam == VK_SPACE) {
-            pUserData->drawMethod = 1 - pUserData->drawMethod;
+        switch (LOWORD(wParam)) {
 
+        case VK_SPACE:{
+            pUserData->drawMethod = 1 - pUserData->drawMethod;
+            break;
         }
 
-        else if (wParam == VK_ESCAPE) { 
+        case VK_ESCAPE: {
             for (int i = 0; i < N; i++) { //обнуление точек (вроде ещё можно через memset)
                 for (int j = 0; j < M; j++) {
                     pUserData->pixelBuffer[i][j] = 0;
@@ -268,8 +269,10 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
             pUserData->prevPoint.x = -1;
             pUserData->prevPoint.y = -1;
             InvalidateRect(hWnd, NULL, TRUE);
+            break;
         }
-        break;
+        }
+        return 0;
     }
 
     case WM_DESTROY: {
