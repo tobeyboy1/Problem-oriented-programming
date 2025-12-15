@@ -19,17 +19,13 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="lab_5.cpp" />
+    <ClCompile Include="test1.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="POP_labs3-6.rc" />
+    <ClInclude Include="resourceLab9.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="resourceLab3-6.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="bitmap1.bmp" />
-    <Image Include="bitmap2.bmp" />
+    <ResourceCompile Include="POP_labs9.rc" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

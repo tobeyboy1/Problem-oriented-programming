@@ -1,60 +1,146 @@
 ﻿#include <windows.h>
-#include "resourceLab8.h"
+#include "resourceLab9.h"
+
+// Единственная разрешенная глобальная переменная
+HINSTANCE hInst;
+
+// ID элементов управления
+#define IDC_STATIC_PATH   1001
+#define IDC_COMBO_EXT     1002
+#define IDC_LIST_FILES    1003
 
 #define CLASS_NAME "F(DSHNLK#NROUFYE(*nlk234nouo3yf98h23n"
-#define N 400
-#define M 300
-#define MIN_WIDTH (int)(1.2 * N)
-#define MIN_HEIGHT (int)(1.2 * M)
+#define MAX_EXTANTIONS 256
+
+// Прототип функции
+LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+void GetFileExtension(const char* filename, char* extBuffer, int bufferSize);
 
 
-struct UserData {
-    BYTE pixelBuffer[N][M];
-    POINT prevPoint;
-    int drawMethod;
-};
-
-LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
-int WINAPI WinMain(
-    _In_ HINSTANCE hInstance,
-    _In_opt_ HINSTANCE hPrevInstance,
-    _In_ LPSTR lpCmdLine,
-    _In_ int nCmdShow
-)
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
+    PSTR szCmdLine, int iCmdShow)
 {
+    hInst = hInstance;
 
     WNDCLASS wc = { 0 };
-    wc.lpfnWndProc = MainWndProc;
+    wc.lpfnWndProc = WndProc;
     wc.hInstance = hInstance;
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-    wc.lpszClassName = CLASS_NAME;
-    wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
     wc.style = CS_HREDRAW | CS_VREDRAW;
-    wc.lpszMenuName = MAKEINTRESOURCE(IDR_MENU1);
+    wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    wc.lpszClassName = CLASS_NAME;
 
     if (!RegisterClass(&wc)) return -1;
+
+    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+
+    int indentX = (int)(screenWidth * 0.07);  // 7% от ширины экрана
+    int indentY = (int)(screenHeight * 0.07); // 7% от высоты экрана
 
     HWND hWnd = CreateWindowEx(
         0,
         CLASS_NAME,
-        "Пробел-смена отрисовки | Esc-очистка",
+        "Lab9",
         WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, CW_USEDEFAULT,
-        MIN_WIDTH + GetSystemMetrics(SM_CXSIZEFRAME) * 2,
-        MIN_HEIGHT + GetSystemMetrics(SM_CYCAPTION) + GetSystemMetrics(SM_CYSIZEFRAME) * 2,
+        indentX,
+        indentY,
+        screenWidth*0.35,
+        screenHeight*0.35,
         NULL, NULL, hInstance, NULL);
 
     if (hWnd == NULL) return 0;
 
-    ShowWindow(hWnd, nCmdShow);
+    ShowWindow(hWnd, iCmdShow);
+    
+    char currentPath[MAX_PATH];
 
-    UserData userData = {};
-    userData.prevPoint.x = -1;
-    userData.prevPoint.y = -1;
-    //userData.drawMethod = 0;
+    // путь к исполняемому файлу
+    GetModuleFileNameA(NULL, currentPath, MAX_PATH);
 
-    SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)&userData);
+    // удаление имени файла из пути
+    char* lastBackslash = strrchr(currentPath, '\\');
+    if (lastBackslash)
+    {
+        *lastBackslash = '\0';
+    }
+
+    RECT clientRect;
+    GetClientRect(hWnd, &clientRect);
+    int width = clientRect.right - clientRect.left;  // Ширина
+    int height = clientRect.bottom - clientRect.top; // Высота
+
+    // путь
+    HWND hStaticPath = CreateWindow("STATIC",
+        currentPath,
+        WS_CHILD | WS_VISIBLE | SS_LEFT,
+        10, 10, width*0.96, height*0.07,
+        hWnd,
+        (HMENU)IDC_STATIC_PATH,
+        hInst,
+        NULL);
+
+    // COMBOBOX для расширений
+    HWND hComboExt = CreateWindow("COMBOBOX",
+        NULL,
+        WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | CBS_SORT | WS_TABSTOP | WS_VSCROLL,
+        10, 40, width * 0.96, height * 0.5,
+        hWnd,
+        (HMENU)IDC_COMBO_EXT,
+        hInst,
+        NULL);
+
+    //  LISTBOX для файлов
+    HWND hListFiles = CreateWindow("LISTBOX",
+        NULL,
+        WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_BORDER |
+        LBS_STANDARD | LBS_SORT | LBS_MULTIPLESEL,
+        10, 70, width * 0.96, height * 0.75,
+        hWnd,
+        (HMENU)IDC_LIST_FILES,
+        hInst,
+        NULL);
+
+    // заполнение LISTBOX 
+    SendMessageA(GetDlgItem(hWnd, IDC_LIST_FILES), LB_DIR, DDL_READWRITE, (LPARAM)"*.*");
+
+    // массив для заполнения COMBOBOX
+    int fileCount = (int)SendMessageA(GetDlgItem(hWnd, IDC_LIST_FILES), LB_GETCOUNT, 0, 0);
+    char extensions[MAX_EXTANTIONS][20] = { 0 };  
+    int extCount = 0;
+
+    for (int i = 0; i < fileCount; i++)
+    {
+        char filename[MAX_PATH];
+        SendMessageA(GetDlgItem(hWnd, IDC_LIST_FILES), LB_GETTEXT, i, (LPARAM)filename);
+
+
+        char ext[20];
+        GetFileExtension(filename, ext, 20);
+
+        BOOL isUnique = TRUE;
+        for (int j = 0; j < extCount; j++)
+        {
+            if (strcmp(extensions[j], ext) == 0)
+            {
+                isUnique = FALSE;
+                break;
+            }
+        }
+
+        // Добавление уникального расширения
+        if (isUnique && extCount < MAX_EXTANTIONS)
+        {
+            strcpy_s(extensions[extCount], 20, ext);
+            extCount++;
+        }
+    }
+
+    // Добавление расширений в COMBOBOX
+    for (int i = 0; i < extCount; i++)
+    {
+        SendMessageA(GetDlgItem(hWnd, IDC_COMBO_EXT), CB_ADDSTRING, 0, (LPARAM)extensions[i]);
+    }
 
     MSG msg;
     while (GetMessage(&msg, NULL, 0, 0)) {
@@ -65,224 +151,85 @@ int WINAPI WinMain(
 }
 
 
-//по-хорошему нужно ещё добавить обработчик mouse_leave и сбрасывать координаты предыдущей точки при выходе за экран
-LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    switch (msg)
+    {
 
-    switch (msg) {
+    case WM_COMMAND:
+    {
 
-    case WM_COMMAND: {
+        switch (LOWORD(wParam))
+        {
+        case ID_EXIT:
+            DestroyWindow(hWnd);
+            return 0;
 
-        switch (LOWORD(wParam)) {
-        case ID_EXIT: DestroyWindow(hWnd); break;
-        }
-        return 0;
-    }
+        case IDC_COMBO_EXT:
+            int selIndex = (int)SendMessageA(GetDlgItem(hWnd, IDC_COMBO_EXT), CB_GETCURSEL, 0, 0);
 
-    case WM_LBUTTONDOWN: {
-        UserData* pUserData = (UserData*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+            char selectedExt[20];
+            SendMessageA(GetDlgItem(hWnd, IDC_COMBO_EXT), CB_GETLBTEXT, selIndex, (LPARAM)selectedExt);
 
-        int x = LOWORD(lParam);
-        int y = HIWORD(lParam);
+            // снятие выделения со всех файлов
+            PostMessageA(GetDlgItem(hWnd, IDC_LIST_FILES), LB_SETSEL, FALSE, -1);
 
-        RECT clientRect;
-        GetClientRect(hWnd, &clientRect);
+            int fileCount = (int)SendMessageA(GetDlgItem(hWnd, IDC_LIST_FILES), LB_GETCOUNT, 0, 0);
 
-        // прямоугольник отрисовки
-        int rectLeft = (clientRect.right - N) / 2;
-        int rectTop = (clientRect.bottom - M) / 2;
-        RECT drawRect = { rectLeft, rectTop, rectLeft + N, rectTop + M };
+            // выделение файлов с выбранным расширением
+            for (int i = 0; i < fileCount; i++)
+            {
+                char filename[MAX_PATH];
+                SendMessageA(GetDlgItem(hWnd, IDC_LIST_FILES), LB_GETTEXT, i, (LPARAM)filename);
 
-        // проверка на нахождении точки в прямоугольнике
-        POINT pt = { x, y };
-        if (PtInRect(&drawRect, pt)) {
 
-            int bufX = x - rectLeft;
-            int bufY = y - rectTop;
+                char fileExt[20];
+                GetFileExtension(filename, fileExt, 20);
 
-            if (pUserData->drawMethod == 0) {
-                pUserData->pixelBuffer[bufX][bufY] = 1;
-            }
-
-            pUserData->prevPoint.x = bufX;
-            pUserData->prevPoint.y = bufY;
-
-            InvalidateRect(hWnd, NULL, FALSE);
-        }
-        break;
-    }
-
-    case WM_LBUTTONUP: {
-        UserData* pUserData = (UserData*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
-
-        pUserData->prevPoint.x = -1;
-        pUserData->prevPoint.y = -1;
-        break;
-    }
-
-    case WM_MOUSEMOVE: {
-        UserData* pUserData = (UserData*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
-
-        if (wParam & MK_LBUTTON) {
-            int x = LOWORD(lParam);
-            int y = HIWORD(lParam);
-
-            RECT clientRect;
-            GetClientRect(hWnd, &clientRect);
-
-            // прямоугольник отрисовки
-            int rectLeft = (clientRect.right - N) / 2;
-            int rectTop = (clientRect.bottom - M) / 2;
-            RECT drawRect = { rectLeft, rectTop, rectLeft + N, rectTop + M };
-
-            // проверка попадания точки в область
-            POINT pt = { x, y };
-            if (PtInRect(&drawRect, pt)) {
-
-                int bufX = x - rectLeft;
-                int bufY = y - rectTop;
-
-                if (pUserData->drawMethod == 0) {
-                    pUserData->pixelBuffer[bufX][bufY] = 1;
-                }
-
-                else if (pUserData->drawMethod == 1 && pUserData->prevPoint.x != -1) {
-
-                    int dx = abs(bufX - pUserData->prevPoint.x);
-                    int dy = abs(bufY - pUserData->prevPoint.y);
-                    int sx = (pUserData->prevPoint.x < bufX) ? 1 : -1; //направление шага
-                    int sy = (pUserData->prevPoint.y < bufY) ? 1 : -1;
-                    int err = dx - dy; //определение направления движения линии
-
-                    // координаты для отрисовки линнии
-                    int x = pUserData->prevPoint.x;
-                    int y = pUserData->prevPoint.y;
-
-                    while (1) {
-                        if (x >= 0 && x < N && y >= 0 && y < M) {
-                            pUserData->pixelBuffer[x][y] = 1;
-                        }
-
-                        if (x == bufX && y == bufY) break;
-
-                        int e2 = 2 * err; //проверка допустимости выбранного направления
-                        if (e2 > -dy) {
-                            err -= dy;
-                            x += sx;
-                        }
-                        if (e2 < dx) {
-                            err += dx;
-                            y += sy;
-                        }
+                // Сравнение расширений
+                if (strcmp(selectedExt, "<без расширения>") == 0)
+                {
+                    // Проверка на файл без расширения
+                    const char* dot = strrchr(filename, '.');
+                    if (dot == NULL || dot[1] == '\0')
+                    {
+                        PostMessageA(GetDlgItem(hWnd, IDC_LIST_FILES), LB_SETSEL, TRUE, i);
                     }
-
                 }
-
-                pUserData->prevPoint.x = bufX;
-                pUserData->prevPoint.y = bufY;
-
-                InvalidateRect(hWnd, NULL, FALSE);
-            }
-        }
-        break;
-    }
-
-    case WM_PAINT: {
-        UserData* pUserData = (UserData*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
-
-        PAINTSTRUCT ps;
-        HDC hdc = BeginPaint(hWnd, &ps);
-
-        RECT clientRect;
-        GetClientRect(hWnd, &clientRect);
-
-        // прямоугольник отрисовки
-        int rectLeft = (clientRect.right - N) / 2;
-        int rectTop = (clientRect.bottom - M) / 2;
-
-        // рамка прямоугольника
-        HPEN hBorderPen = CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
-        HPEN hOldPen = (HPEN)SelectObject(hdc, hBorderPen);
-        SelectObject(hdc, GetStockObject(NULL_BRUSH));
-        Rectangle(hdc, rectLeft, rectTop, rectLeft + N, rectTop + M);
-        SelectObject(hdc, hOldPen);
-        DeleteObject(hBorderPen);
-
-        // размещение пикселей из буфера
-        for (int i = 0; i < N; i++) {
-            for (int j = 0; j < M; j++) {
-                if (pUserData->pixelBuffer[i][j]) {
-                    SetPixel(hdc, rectLeft + i, rectTop + j, RGB(0, 0, 0));
+                else if (strcmp(fileExt, selectedExt) == 0)
+                {
+                    PostMessageA(GetDlgItem(hWnd, IDC_LIST_FILES), LB_SETSEL, TRUE, i);
                 }
             }
-        }
-
-        EndPaint(hWnd, &ps);
-        break;
-    }
-
-    case WM_SIZING: {
-        RECT* pRect = (RECT*)lParam;
-
-        if (pRect->right - pRect->left < MIN_WIDTH) {
-            switch (wParam) {
-            case WMSZ_LEFT:
-            case WMSZ_TOPLEFT:
-            case WMSZ_BOTTOMLEFT:
-                pRect->left = pRect->right - MIN_WIDTH;
-                break;
-            default:
-                pRect->right = pRect->left + MIN_WIDTH;
-                break;
-            }
-        }
-
-        if (pRect->bottom - pRect->top < MIN_HEIGHT) {
-            switch (wParam) {
-            case WMSZ_TOP:
-            case WMSZ_TOPLEFT:
-            case WMSZ_TOPRIGHT:
-                pRect->top = pRect->bottom - MIN_HEIGHT;
-                break;
-            default:
-                pRect->bottom = pRect->top + MIN_HEIGHT;
-                break;
-            }
-        }
-        break;
-    }
-    case WM_KEYDOWN: {
-        UserData* pUserData = (UserData*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
-
-        switch (LOWORD(wParam)) {
-
-        case VK_SPACE:{
-            pUserData->drawMethod = 1 - pUserData->drawMethod;
             break;
-        }
-
-        case VK_ESCAPE: {
-            for (int i = 0; i < N; i++) { //обнуление точек (вроде ещё можно через memset)
-                for (int j = 0; j < M; j++) {
-                    pUserData->pixelBuffer[i][j] = 0;
-                }
-            }
-            pUserData->prevPoint.x = -1;
-            pUserData->prevPoint.y = -1;
-            InvalidateRect(hWnd, NULL, TRUE);
-            break;
-        }
         }
         return 0;
     }
 
-    case WM_DESTROY: {
-
+    case WM_DESTROY:
         PostQuitMessage(0);
         return 0;
-    }
 
     default:
         return DefWindowProc(hWnd, msg, wParam, lParam);
     }
+
     return 0;
+}
+
+// получение расширения файла
+void GetFileExtension(const char* filename, char* extBuffer, int bufferSize)
+{
+    const char* dot = strrchr(filename, '.'); //проверка на последнее вхождение символа
+
+    if (dot && dot[1] != '\0')
+    {
+        // копирование расширения
+        strncpy_s(extBuffer, bufferSize, dot + 1, _TRUNCATE);
+    }
+    else
+    {
+        // для файлов без расширения
+        strcpy_s(extBuffer, bufferSize, "<без расширения>");
+    }
 }
