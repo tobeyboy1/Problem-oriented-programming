@@ -1,18 +1,10 @@
 ﻿#include <windows.h>
 #include "resourceLab9.h"
 
-// Единственная разрешенная глобальная переменная
-HINSTANCE hInst;
-
-// ID элементов управления
-#define IDC_STATIC_PATH   1001
-#define IDC_COMBO_EXT     1002
-#define IDC_LIST_FILES    1003
-
 #define CLASS_NAME "F(DSHNLK#NROUFYE(*nlk234nouo3yf98h23n"
 #define MAX_EXTANTIONS 256
 
-// Прототип функции
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 void GetFileExtension(const char* filename, char* extBuffer, int bufferSize);
 
@@ -20,7 +12,6 @@ void GetFileExtension(const char* filename, char* extBuffer, int bufferSize);
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     PSTR szCmdLine, int iCmdShow)
 {
-    hInst = hInstance;
 
     WNDCLASS wc = { 0 };
     wc.lpfnWndProc = WndProc;
@@ -71,23 +62,24 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     int height = clientRect.bottom - clientRect.top; // Высота
 
     // путь
-    HWND hStaticPath = CreateWindow("STATIC",
+    //окна стоило создать через ресурсы
+    HWND hStaticPath = CreateWindow("STATIC", 
         currentPath,
         WS_CHILD | WS_VISIBLE | SS_LEFT,
-        10, 10, width*0.96, height*0.07,
+        width*0.025, height * 0.03, width*0.96, height*0.07, //стоило минимизировать рассчёты и сделать аккуратнее
         hWnd,
         (HMENU)IDC_STATIC_PATH,
-        hInst,
+        hInstance,
         NULL);
 
     // COMBOBOX для расширений
     HWND hComboExt = CreateWindow("COMBOBOX",
         NULL,
         WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | CBS_SORT | WS_TABSTOP | WS_VSCROLL,
-        10, 40, width * 0.96, height * 0.5,
+        width * 0.025, height * 0.15, width * 0.96, height * 0.5,
         hWnd,
         (HMENU)IDC_COMBO_EXT,
-        hInst,
+        hInstance,
         NULL);
 
     //  LISTBOX для файлов
@@ -95,24 +87,24 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         NULL,
         WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_BORDER |
         LBS_STANDARD | LBS_SORT | LBS_MULTIPLESEL,
-        10, 70, width * 0.96, height * 0.75,
+        width * 0.025, height * 0.25, width * 0.96, height * 0.75,
         hWnd,
         (HMENU)IDC_LIST_FILES,
-        hInst,
+        hInstance,
         NULL);
 
     // заполнение LISTBOX 
-    SendMessageA(GetDlgItem(hWnd, IDC_LIST_FILES), LB_DIR, DDL_READWRITE, (LPARAM)"*.*");
+    SendDlgItemMessageA(hWnd, IDC_LIST_FILES, LB_DIR, DDL_READWRITE, (LPARAM)"*.*");
 
     // массив для заполнения COMBOBOX
-    int fileCount = (int)SendMessageA(GetDlgItem(hWnd, IDC_LIST_FILES), LB_GETCOUNT, 0, 0);
+    int fileCount = (int)SendDlgItemMessageA(hWnd, IDC_LIST_FILES, LB_GETCOUNT, 0, 0);
     char extensions[MAX_EXTANTIONS][20] = { 0 };  
     int extCount = 0;
 
     for (int i = 0; i < fileCount; i++)
     {
         char filename[MAX_PATH];
-        SendMessageA(GetDlgItem(hWnd, IDC_LIST_FILES), LB_GETTEXT, i, (LPARAM)filename);
+        SendDlgItemMessageA(hWnd, IDC_LIST_FILES, LB_GETTEXT, i, (LPARAM)filename);
 
 
         char ext[20];
@@ -139,7 +131,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     // Добавление расширений в COMBOBOX
     for (int i = 0; i < extCount; i++)
     {
-        SendMessageA(GetDlgItem(hWnd, IDC_COMBO_EXT), CB_ADDSTRING, 0, (LPARAM)extensions[i]);
+        SendDlgItemMessageA(hWnd, IDC_COMBO_EXT, CB_ADDSTRING, 0, (LPARAM)extensions[i]);
     }
 
     MSG msg;
@@ -166,21 +158,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             return 0;
 
         case IDC_COMBO_EXT:
-            int selIndex = (int)SendMessageA(GetDlgItem(hWnd, IDC_COMBO_EXT), CB_GETCURSEL, 0, 0);
+            int selIndex = (int)SendDlgItemMessageA(hWnd, IDC_COMBO_EXT, CB_GETCURSEL, 0, 0);
 
             char selectedExt[20];
-            SendMessageA(GetDlgItem(hWnd, IDC_COMBO_EXT), CB_GETLBTEXT, selIndex, (LPARAM)selectedExt);
+            SendDlgItemMessageA(hWnd, IDC_COMBO_EXT, CB_GETLBTEXT, selIndex, (LPARAM)selectedExt);
 
             // снятие выделения со всех файлов
-            PostMessageA(GetDlgItem(hWnd, IDC_LIST_FILES), LB_SETSEL, FALSE, -1);
+            SendDlgItemMessageA(hWnd, IDC_LIST_FILES, LB_SETSEL, FALSE, -1);
 
-            int fileCount = (int)SendMessageA(GetDlgItem(hWnd, IDC_LIST_FILES), LB_GETCOUNT, 0, 0);
+            int fileCount = (int)SendDlgItemMessageA(hWnd, IDC_LIST_FILES, LB_GETCOUNT, 0, 0);
 
             // выделение файлов с выбранным расширением
             for (int i = 0; i < fileCount; i++)
             {
                 char filename[MAX_PATH];
-                SendMessageA(GetDlgItem(hWnd, IDC_LIST_FILES), LB_GETTEXT, i, (LPARAM)filename);
+                SendDlgItemMessageA(hWnd, IDC_LIST_FILES, LB_GETTEXT, i, (LPARAM)filename);
 
 
                 char fileExt[20];
@@ -193,12 +185,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     const char* dot = strrchr(filename, '.');
                     if (dot == NULL || dot[1] == '\0')
                     {
-                        PostMessageA(GetDlgItem(hWnd, IDC_LIST_FILES), LB_SETSEL, TRUE, i);
+                        SendDlgItemMessageA(hWnd, IDC_LIST_FILES, LB_SETSEL, TRUE, i);
                     }
                 }
                 else if (strcmp(fileExt, selectedExt) == 0)
                 {
-                    PostMessageA(GetDlgItem(hWnd, IDC_LIST_FILES), LB_SETSEL, TRUE, i);
+                    SendDlgItemMessageA(hWnd, IDC_LIST_FILES, LB_SETSEL, TRUE, i);
                 }
             }
             break;

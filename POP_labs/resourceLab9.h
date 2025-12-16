@@ -2,8 +2,13 @@
 // Включаемый файл, созданный в Microsoft Visual C++.
 // Используется POP_labs9.rc
 //
+#define IDC_STATIC_PATH   1001
+#define IDC_COMBO_EXT     1002
+#define IDC_LIST_FILES    1003
+
 #define IDR_MENU1                       102
 #define ID_EXIT                         40001
+
 
 // Next default values for new objects
 // 

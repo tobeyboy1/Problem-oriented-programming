@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="lab9.cpp" />
     <ClCompile Include="test1.cpp" />
   </ItemGroup>
   <ItemGroup>
